@@ -77,6 +77,7 @@ struct WorkoutBlockView: View {
     let color: Color
     @Binding var showSetTracking: Bool
     @State private var completedSets: Set<String> = []
+    @State private var failedSets: Set<String> = []
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -104,7 +105,8 @@ struct WorkoutBlockView: View {
                     blockRepeatCount: block.repeatCount,
                     color: color,
                     showSetTracking: showSetTracking,
-                    completedSets: $completedSets
+                    completedSets: $completedSets,
+                    failedSets: $failedSets
                 )
             }
         }
@@ -117,6 +119,7 @@ struct ExerciseRow: View {
     let color: Color
     let showSetTracking: Bool
     @Binding var completedSets: Set<String>
+    @Binding var failedSets: Set<String>
     
     var body: some View {
         VStack(spacing: 0) {
@@ -158,14 +161,16 @@ struct ExerciseRow: View {
                     ForEach(1...repeatCount, id: \.self) { setNum in
                         let key = "\(exercise.id)-\(setNum)"
                         let isComplete = completedSets.contains(key)
+                        let isFailed = failedSets.contains(key)
                         
                         Button {
                             let impact = UIImpactFeedbackGenerator(style: .light)
                             impact.impactOccurred()
                             
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.65)) {
-                                if isComplete {
+                                if isComplete || isFailed {
                                     completedSets.remove(key)
+                                    failedSets.remove(key)
                                 } else {
                                     completedSets.insert(key)
                                 }
@@ -173,10 +178,14 @@ struct ExerciseRow: View {
                         } label: {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(isComplete ? color.opacity(0.2) : Color(.tertiarySystemBackground))
+                                    .fill(isFailed ? Color.red.opacity(0.2) : (isComplete ? color.opacity(0.2) : Color(.tertiarySystemBackground)))
                                     .frame(height: 40)
                                 
-                                if isComplete {
+                                if isFailed {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundStyle(.red)
+                                } else if isComplete {
                                     Image(systemName: "checkmark")
                                         .font(.system(size: 14, weight: .bold))
                                         .foregroundStyle(color)
@@ -188,6 +197,30 @@ struct ExerciseRow: View {
                             }
                         }
                         .buttonStyle(.plain)
+                        .contextMenu {
+                            Button {
+                                let impact = UIImpactFeedbackGenerator(style: .medium)
+                                impact.impactOccurred()
+                                
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.65)) {
+                                    completedSets.remove(key)
+                                    failedSets.insert(key)
+                                }
+                            } label: {
+                                Label("Mark as Failure", systemImage: "xmark.circle")
+                            }
+                            
+                            if isFailed || isComplete {
+                                Button {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.65)) {
+                                        completedSets.remove(key)
+                                        failedSets.remove(key)
+                                    }
+                                } label: {
+                                    Label("Clear", systemImage: "arrow.uturn.backward")
+                                }
+                            }
+                        }
                     }
                 }
                 .padding()
