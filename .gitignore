@@ -1,0 +1,26 @@
+# Environment variables (contains secrets)
+.env
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# Build artifacts
+*.ipa
+*.dSYM.zip
+*.xcarchive
+
+# Ruby
+Gemfile.lock
+vendor/bundle
+
+# Xcode
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+DerivedData/
+
+# macOS
+.DS_Store
