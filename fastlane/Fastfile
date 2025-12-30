@@ -26,10 +26,19 @@ platform :ios do
       xcargs: "-allowProvisioningUpdates"
     )
 
-    # Upload to TestFlight
+    # Upload to TestFlight with metadata
     upload_to_testflight(
       api_key: api_key,
       skip_waiting_for_build_processing: true
+    )
+
+    # Update App Store metadata
+    deliver(
+      api_key: api_key,
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      force: true,
+      precheck_include_in_app_purchases: false
     )
   end
 end

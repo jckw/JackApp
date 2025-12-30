@@ -1,0 +1,3 @@
+JackApp - Your personal workout and nutrition companion.
+
+Track your gym workouts and daily calorie intake with ease.
