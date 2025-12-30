@@ -14,6 +14,11 @@ struct ContentView: View {
                 .tabItem {
                     Label("Workouts", systemImage: "figure.strengthtraining.traditional")
                 }
+            
+            NutritionView()
+                .tabItem {
+                    Label("Nutrition", systemImage: "fork.knife")
+                }
         }
     }
 }
