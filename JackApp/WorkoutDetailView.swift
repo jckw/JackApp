@@ -9,7 +9,8 @@ import SwiftUI
 
 struct WorkoutDetailView: View {
     let workout: Workout
-    @State private var showSetTracking = false
+    @State private var expandAll: Bool? = nil
+    @State private var allExpanded = false
     
     var body: some View {
         ScrollView {
@@ -46,7 +47,7 @@ struct WorkoutDetailView: View {
                     WorkoutBlockView(
                         block: block,
                         color: workout.color,
-                        showSetTracking: $showSetTracking
+                        expandAll: $expandAll
                     )
                 }
             }
@@ -59,11 +60,10 @@ struct WorkoutDetailView: View {
                 Button {
                     let impact = UIImpactFeedbackGenerator(style: .light)
                     impact.impactOccurred()
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                        showSetTracking.toggle()
-                    }
+                    allExpanded.toggle()
+                    expandAll = allExpanded
                 } label: {
-                    Image(systemName: showSetTracking ? "square.grid.3x3.fill" : "square.grid.3x3")
+                    Image(systemName: allExpanded ? "rectangle.compress.vertical" : "rectangle.expand.vertical")
                         .foregroundStyle(workout.color)
                         .font(.system(size: 20))
                 }
@@ -75,7 +75,7 @@ struct WorkoutDetailView: View {
 struct WorkoutBlockView: View {
     let block: WorkoutBlock
     let color: Color
-    @Binding var showSetTracking: Bool
+    @Binding var expandAll: Bool?
     @State private var completedSets: Set<String> = []
     @State private var failedSets: Set<String> = []
     
@@ -104,7 +104,7 @@ struct WorkoutBlockView: View {
                     exercise: exercise,
                     blockRepeatCount: block.repeatCount,
                     color: color,
-                    showSetTracking: showSetTracking,
+                    expandAll: $expandAll,
                     completedSets: $completedSets,
                     failedSets: $failedSets
                 )
@@ -117,9 +117,10 @@ struct ExerciseRow: View {
     let exercise: Exercise
     let blockRepeatCount: Int?
     let color: Color
-    let showSetTracking: Bool
+    @Binding var expandAll: Bool?
     @Binding var completedSets: Set<String>
     @Binding var failedSets: Set<String>
+    @State private var isExpanded = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -151,9 +152,19 @@ struct ExerciseRow: View {
             }
             .padding()
             .background(Color(.secondarySystemBackground))
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if blockRepeatCount != nil {
+                    let impact = UIImpactFeedbackGenerator(style: .light)
+                    impact.impactOccurred()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        isExpanded.toggle()
+                    }
+                }
+            }
             
             // Set tracking
-            if showSetTracking, let repeatCount = blockRepeatCount {
+            if isExpanded, let repeatCount = blockRepeatCount {
                 Divider()
                     .padding(.horizontal)
                 
@@ -228,6 +239,13 @@ struct ExerciseRow: View {
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .onChange(of: expandAll) { _, newValue in
+            if let newValue {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    isExpanded = newValue
+                }
+            }
+        }
     }
 }
 
