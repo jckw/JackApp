@@ -10,8 +10,9 @@ import SwiftUI
 struct NutritionView: View {
     private let dailyTarget = 1950
     private let proteinTarget = 150
-    
+
     @State private var oatmealChecked = false
+    @State private var showingBodyProgress = false
     @State private var proteinPowderChecked = false
     @State private var flatWhiteChecked = false
     @State private var pizzaSlices = 0
@@ -129,6 +130,9 @@ struct NutritionView: View {
                             color: totalConsumed > dailyTarget ? .red : .green
                         )
                         .frame(width: 60, height: 60)
+                        .onLongPressGesture(minimumDuration: 1.0) {
+                            openBodyProgress()
+                        }
                     }
                     .padding(.vertical, 8)
                 }
@@ -276,7 +280,16 @@ struct NutritionView: View {
                 }
             }
             .navigationTitle("Nutrition")
+            .fullScreenCover(isPresented: $showingBodyProgress) {
+                BodyProgressView()
+            }
         }
+    }
+
+    private func openBodyProgress() {
+        let generator = UIImpactFeedbackGenerator(style: .heavy)
+        generator.impactOccurred()
+        showingBodyProgress = true
     }
 }
 
