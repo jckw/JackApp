@@ -5,8 +5,10 @@
 //  Created by Jack on 18/01/2026.
 //
 
+import PhotosUI
 import SwiftData
 import SwiftUI
+import UIKit
 
 struct BodyProgressView: View {
     @Environment(\.modelContext) private var modelContext
@@ -19,6 +21,7 @@ struct BodyProgressView: View {
     @State private var selectedPhoto: BodyPhoto?
     @State private var showingDeleteConfirmation = false
     @State private var photoToDelete: BodyPhoto?
+    @State private var selectedPhotoItem: PhotosPickerItem?
 
     private let columns = [
         GridItem(.flexible(), spacing: 2),
@@ -63,7 +66,7 @@ struct BodyProgressView: View {
             }
         }
         .fullScreenCover(isPresented: $showingCamera) {
-            PrivateCameraView { image in
+            PrivateCameraView(referenceImage: photos.first?.uiImage) { image in
                 savePhoto(image)
             }
         }
@@ -140,19 +143,41 @@ struct BodyProgressView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            Button {
-                showingCamera = true
-            } label: {
-                Label("Take Photo", systemImage: "camera.fill")
-                    .font(.headline)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(.blue)
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            HStack(spacing: 12) {
+                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                    Label("Library", systemImage: "photo.on.rectangle")
+                        .font(.headline)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(.secondary.opacity(0.2))
+                        .foregroundStyle(.primary)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+
+                Button {
+                    showingCamera = true
+                } label: {
+                    Label("Camera", systemImage: "camera.fill")
+                        .font(.headline)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(.blue)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
             }
             .padding()
             .background(.ultraThinMaterial)
+        }
+        .onChange(of: selectedPhotoItem) { _, newItem in
+            Task {
+                if let newItem,
+                   let data = try? await newItem.loadTransferable(type: Data.self),
+                   let uiImage = UIImage(data: data) {
+                    savePhoto(uiImage)
+                }
+                selectedPhotoItem = nil
+            }
         }
     }
 

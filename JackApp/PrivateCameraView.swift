@@ -7,15 +7,24 @@
 
 import AVFoundation
 import SwiftUI
+import UIKit
 
 struct PrivateCameraView: View {
     @Environment(\.dismiss) private var dismiss
+    let referenceImage: UIImage?
     let onCapture: (UIImage) -> Void
 
     @State private var cameraManager = CameraManager()
     @State private var capturedImage: UIImage?
     @State private var showingPreview = false
     @State private var flashEnabled = false
+    @State private var overlayOpacity: Double = 0.3
+    @State private var showOverlay = true
+    @State private var timerSeconds: Int = 0
+    @State private var countdownRemaining: Int?
+    @State private var countdownTimer: Timer?
+
+    private let timerOptions = [0, 3, 5, 10]
 
     var body: some View {
         ZStack {
@@ -34,6 +43,7 @@ struct PrivateCameraView: View {
             }
         }
         .onDisappear {
+            cancelTimer()
             Task {
                 await cameraManager.stopSession()
             }
@@ -45,9 +55,28 @@ struct PrivateCameraView: View {
             CameraPreviewView(session: cameraManager.session)
                 .ignoresSafeArea()
 
+            // Ghost overlay of reference image
+            if showOverlay, let referenceImage {
+                Image(uiImage: referenceImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .opacity(overlayOpacity)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+            }
+
+            // Countdown display
+            if let countdown = countdownRemaining {
+                Text("\(countdown)")
+                    .font(.system(size: 120, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .shadow(color: .black.opacity(0.5), radius: 10)
+            }
+
             VStack {
                 HStack {
                     Button {
+                        cancelTimer()
                         dismiss()
                     } label: {
                         Image(systemName: "xmark")
@@ -58,6 +87,24 @@ struct PrivateCameraView: View {
                     }
 
                     Spacer()
+
+                    // Timer button
+                    Button {
+                        cycleTimer()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "timer")
+                            if timerSeconds > 0 {
+                                Text("\(timerSeconds)s")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                            }
+                        }
+                        .font(.title2)
+                        .foregroundStyle(timerSeconds > 0 ? .yellow : .white)
+                        .padding()
+                        .background(.black.opacity(0.5), in: Capsule())
+                    }
 
                     Button {
                         flashEnabled.toggle()
@@ -108,31 +155,99 @@ struct PrivateCameraView: View {
 
                 Spacer()
 
+                // Overlay controls (only show if we have a reference image)
+                if referenceImage != nil {
+                    HStack(spacing: 16) {
+                        Button {
+                            showOverlay.toggle()
+                        } label: {
+                            Image(systemName: showOverlay ? "eye.fill" : "eye.slash.fill")
+                                .font(.title3)
+                                .foregroundStyle(.white)
+                                .padding(10)
+                                .background(.black.opacity(0.5), in: Circle())
+                        }
+
+                        if showOverlay {
+                            Slider(value: $overlayOpacity, in: 0.1...0.7)
+                                .tint(.white)
+                                .frame(width: 150)
+                        }
+                    }
+                    .padding(.bottom, 16)
+                }
+
                 HStack {
                     Spacer()
 
                     Button {
-                        Task {
-                            if let image = await cameraManager.capturePhoto(flash: flashEnabled) {
-                                capturedImage = image
-                                showingPreview = true
-                            }
+                        if countdownRemaining != nil {
+                            cancelTimer()
+                        } else if timerSeconds > 0 {
+                            startTimer()
+                        } else {
+                            capturePhoto()
                         }
                     } label: {
-                        Circle()
-                            .stroke(.white, lineWidth: 4)
-                            .frame(width: 70, height: 70)
-                            .overlay {
+                        ZStack {
+                            Circle()
+                                .stroke(.white, lineWidth: 4)
+                                .frame(width: 70, height: 70)
+
+                            if countdownRemaining != nil {
+                                // Show cancel X during countdown
+                                Image(systemName: "xmark")
+                                    .font(.title)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(.white)
+                            } else {
                                 Circle()
                                     .fill(.white)
                                     .frame(width: 58, height: 58)
                             }
+                        }
                     }
                     .disabled(!cameraManager.isAuthorized)
 
                     Spacer()
                 }
                 .padding(.bottom, 40)
+            }
+        }
+    }
+
+    private func cycleTimer() {
+        if let currentIndex = timerOptions.firstIndex(of: timerSeconds) {
+            let nextIndex = (currentIndex + 1) % timerOptions.count
+            timerSeconds = timerOptions[nextIndex]
+        }
+    }
+
+    private func startTimer() {
+        countdownRemaining = timerSeconds
+        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+            if let remaining = countdownRemaining {
+                if remaining > 1 {
+                    countdownRemaining = remaining - 1
+                } else {
+                    cancelTimer()
+                    capturePhoto()
+                }
+            }
+        }
+    }
+
+    private func cancelTimer() {
+        countdownTimer?.invalidate()
+        countdownTimer = nil
+        countdownRemaining = nil
+    }
+
+    private func capturePhoto() {
+        Task {
+            if let image = await cameraManager.capturePhoto(flash: flashEnabled) {
+                capturedImage = image
+                showingPreview = true
             }
         }
     }
@@ -183,25 +298,33 @@ struct PrivateCameraView: View {
 struct CameraPreviewView: UIViewRepresentable {
     let session: AVCaptureSession
 
-    func makeUIView(context: Context) -> UIView {
-        let view = UIView(frame: .zero)
-        let previewLayer = AVCaptureVideoPreviewLayer(session: session)
-        previewLayer.videoGravity = .resizeAspectFill
-        view.layer.addSublayer(previewLayer)
-        context.coordinator.previewLayer = previewLayer
+    func makeUIView(context: Context) -> CameraPreviewUIView {
+        let view = CameraPreviewUIView()
+        view.previewLayer.session = session
         return view
     }
 
-    func updateUIView(_ uiView: UIView, context: Context) {
-        context.coordinator.previewLayer?.frame = uiView.bounds
+    func updateUIView(_ uiView: CameraPreviewUIView, context: Context) {
+        uiView.previewLayer.session = session
+    }
+}
+
+class CameraPreviewUIView: UIView {
+    override class var layerClass: AnyClass {
+        AVCaptureVideoPreviewLayer.self
     }
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator()
+    var previewLayer: AVCaptureVideoPreviewLayer {
+        layer as! AVCaptureVideoPreviewLayer
     }
 
-    class Coordinator {
-        var previewLayer: AVCaptureVideoPreviewLayer?
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        previewLayer.videoGravity = .resizeAspectFill
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
 }
 
@@ -324,5 +447,5 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
 }
 
 #Preview {
-    PrivateCameraView { _ in }
+    PrivateCameraView(referenceImage: nil) { _ in }
 }
