@@ -53,19 +53,17 @@ struct PrivateCameraView: View {
     private var cameraView: some View {
         ZStack {
             CameraPreviewView(session: cameraManager.session)
+                .overlay {
+                    // Ghost overlay of reference image
+                    if showOverlay, let referenceImage {
+                        Image(uiImage: referenceImage)
+                            .resizable()
+                            .scaledToFill()
+                            .opacity(overlayOpacity)
+                            .allowsHitTesting(false)
+                    }
+                }
                 .ignoresSafeArea()
-
-            // Ghost overlay of reference image
-            if showOverlay, let referenceImage {
-                Image(uiImage: referenceImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
-                    .opacity(overlayOpacity)
-                    .ignoresSafeArea()
-                    .allowsHitTesting(false)
-            }
 
             // Countdown display
             if let countdown = countdownRemaining {
