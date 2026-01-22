@@ -60,6 +60,8 @@ struct PrivateCameraView: View {
                 Image(uiImage: referenceImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
                     .opacity(overlayOpacity)
                     .ignoresSafeArea()
                     .allowsHitTesting(false)
