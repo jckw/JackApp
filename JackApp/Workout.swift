@@ -120,31 +120,34 @@ extension Workout {
     static let workoutC = Workout(
         name: "Workout C",
         letter: "C",
-        focus: "Back/Pull Focus",
-        description: "Back and pulling movements focused session with lat emphasis",
+        focus: "Horizontal Pull / Shoulder Focus",
+        description: "Horizontal pulling and shoulder focused session with quad emphasis",
         color: Color.teal,
         icon: "figure.climbing",
         blocks: [
             WorkoutBlock(type: .warmup, exercises: [
-                Exercise(name: "Light cardio & lat stretches", sets: "5 min", icon: "figure.walk")
+                Exercise(name: "Light cardio & shoulder mobility", sets: "5 min", icon: "figure.walk")
             ]),
             WorkoutBlock(type: .work, exercises: [
-                Exercise(name: "Weighted Pull-Up or Pulldown Variation", sets: "4×6–8")
+                Exercise(name: "Chest-Supported Row or T-Bar Row", sets: "4×6–8")
             ], repeatCount: 4),
             WorkoutBlock(type: .work, exercises: [
                 Exercise(name: "Incline DB Bench or Machine Press", sets: "3×8–10")
             ], repeatCount: 3),
             WorkoutBlock(type: .work, exercises: [
-                Exercise(name: "Lying or Seated Hamstring Curl", sets: "3×10–12")
+                Exercise(name: "Leg Press or Front Squat", sets: "3×8–10", icon: "figure.strengthtraining.functional")
             ], repeatCount: 3),
             WorkoutBlock(type: .work, exercises: [
-                Exercise(name: "Seated Cable Row", sets: "3×10–12")
+                Exercise(name: "DB Shoulder Press or Arnold Press", sets: "3×8–10")
             ], repeatCount: 3),
             WorkoutBlock(type: .work, exercises: [
-                Exercise(name: "Rear-Delt Cable Fly", sets: "3×12–15")
+                Exercise(name: "Cable or DB Lateral Raise", sets: "3×12–15")
             ], repeatCount: 3),
             WorkoutBlock(type: .work, exercises: [
-                Exercise(name: "Overhead rope extension", sets: "2×10–12", isOptional: true)
+                Exercise(name: "Face Pull or Reverse Pec Deck", sets: "3×12–15")
+            ], repeatCount: 3),
+            WorkoutBlock(type: .work, exercises: [
+                Exercise(name: "DB Front Raise", sets: "2×10–12", isOptional: true)
             ], repeatCount: 2)
         ]
     )
