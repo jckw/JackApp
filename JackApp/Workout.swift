@@ -120,34 +120,31 @@ extension Workout {
     static let workoutC = Workout(
         name: "Workout C",
         letter: "C",
-        focus: "Horizontal Pull / Shoulder Focus",
-        description: "Horizontal pulling and shoulder focused session with quad emphasis",
+        focus: "Shoulder Focus",
+        description: "Shoulder and horizontal pulling focused full body session",
         color: Color.teal,
-        icon: "figure.climbing",
+        icon: "figure.arms.open",
         blocks: [
             WorkoutBlock(type: .warmup, exercises: [
                 Exercise(name: "Light cardio & shoulder mobility", sets: "5 min", icon: "figure.walk")
             ]),
             WorkoutBlock(type: .work, exercises: [
-                Exercise(name: "Chest-Supported Row or T-Bar Row", sets: "4×6–8")
+                Exercise(name: "DB Shoulder Press or Arnold Press", sets: "4×6–8")
             ], repeatCount: 4),
             WorkoutBlock(type: .work, exercises: [
-                Exercise(name: "Incline DB Bench or Machine Press", sets: "3×8–10")
+                Exercise(name: "Chest-Supported Row or T-Bar Row", sets: "3×8–10")
             ], repeatCount: 3),
             WorkoutBlock(type: .work, exercises: [
                 Exercise(name: "Leg Press or Front Squat", sets: "3×8–10", icon: "figure.strengthtraining.functional")
             ], repeatCount: 3),
             WorkoutBlock(type: .work, exercises: [
-                Exercise(name: "DB Shoulder Press or Arnold Press", sets: "3×8–10")
+                Exercise(name: "Incline DB Bench or Machine Press", sets: "3×10–12")
             ], repeatCount: 3),
             WorkoutBlock(type: .work, exercises: [
                 Exercise(name: "Cable or DB Lateral Raise", sets: "3×12–15")
             ], repeatCount: 3),
             WorkoutBlock(type: .work, exercises: [
-                Exercise(name: "Face Pull or Reverse Pec Deck", sets: "3×12–15")
-            ], repeatCount: 3),
-            WorkoutBlock(type: .work, exercises: [
-                Exercise(name: "DB Front Raise", sets: "2×10–12", isOptional: true)
+                Exercise(name: "Face Pull or Rear-Delt Fly", sets: "2×12–15", isOptional: true)
             ], repeatCount: 2)
         ]
     )
