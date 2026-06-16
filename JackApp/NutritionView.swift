@@ -7,110 +7,69 @@
 
 import SwiftUI
 
+struct Macros {
+    let calories: Int
+    let protein: Int
+    let carbs: Int
+    let fat: Int
+    let sugar: Int
+}
+
+struct Meal: Identifiable {
+    let id: String
+    let emoji: String
+    let name: String
+    let section: MealSection
+    let macros: Macros
+}
+
+enum MealSection: String, CaseIterable {
+    case breakfast = "Breakfast"
+    case snacks = "Snacks"
+    case meals = "Meals"
+}
+
+private let allMeals: [Meal] = [
+    Meal(id: "oatmeal_whey",      emoji: "🥣", name: "Oatmeal + whey",                                    section: .breakfast, macros: Macros(calories: 330, protein: 31, carbs: 41, fat:  5, sugar: 13)),
+    Meal(id: "greek_yog",         emoji: "🫙", name: "200g 0% Greek yog, whey, forest fruits",             section: .breakfast, macros: Macros(calories: 285, protein: 45, carbs: 23, fat:  1, sugar: 15)),
+    Meal(id: "lucky_charms",      emoji: "🌈", name: "Cup of dry Lucky Charms",                            section: .snacks,    macros: Macros(calories: 150, protein:  3, carbs: 30, fat:  2, sugar: 13)),
+    Meal(id: "barebells",         emoji: "🍫", name: "Barebells protein bar",                              section: .snacks,    macros: Macros(calories: 200, protein: 20, carbs: 15, fat:  7, sugar:  1)),
+    Meal(id: "fig_bar",           emoji: "🍪", name: "Fig bar",                                            section: .snacks,    macros: Macros(calories: 100, protein:  1, carbs: 20, fat:  2, sugar: 11)),
+    Meal(id: "rice_krispies",     emoji: "🍘", name: "Rice Krispies treat",                               section: .snacks,    macros: Macros(calories:  90, protein:  1, carbs: 17, fat:  2, sugar:  8)),
+    Meal(id: "small_bagel",       emoji: "🥯", name: "Smaller bagel w cream cheese",                      section: .meals,     macros: Macros(calories: 270, protein:  8, carbs: 38, fat:  8, sugar:  4)),
+    Meal(id: "normal_bagel",      emoji: "🥯", name: "Normal bagel w cream cheese",                       section: .meals,     macros: Macros(calories: 450, protein: 16, carbs: 54, fat: 18, sugar:  6)),
+    Meal(id: "sweetgreen",        emoji: "🥗", name: "850 kcal double chicken Sweetgreen",                section: .meals,     macros: Macros(calories: 850, protein: 65, carbs: 65, fat: 30, sugar: 10)),
+    Meal(id: "bone_broth_bowl",   emoji: "🍲", name: "200g bone broth rice, 180g chicken thigh, broccoli", section: .meals,   macros: Macros(calories: 615, protein: 54, carbs: 63, fat: 15, sugar:  3)),
+]
+
+private let pizzaMacros = Macros(calories: 290, protein: 12, carbs: 36, fat: 11, sugar: 4)
+
 struct NutritionView: View {
     private let dailyTarget = 1950
     private let proteinTarget = 150
 
-    @State private var oatmealChecked = false
-    @State private var showingBodyProgress = false
-    @State private var proteinPowderChecked = false
-    @State private var flatWhiteChecked = false
+    @State private var checkedIDs: Set<String> = []
     @State private var pizzaSlices = 0
-    @State private var bagelChecked = false
-    @State private var loxChecked = false
     @State private var lunchDinnerSplit: Double = 0.6
-    
-    struct Macros {
-        let calories: Int
-        let protein: Int
-        let carbs: Int
-        let fat: Int
-        let sugar: Int
+    @State private var showingBodyProgress = false
+
+    private var consumedMacros: Macros {
+        let checked = allMeals.filter { checkedIDs.contains($0.id) }.map(\.macros)
+        let pizza = (0..<pizzaSlices).map { _ in pizzaMacros }
+        let all = checked + pizza
+        return Macros(
+            calories: all.reduce(0) { $0 + $1.calories },
+            protein:  all.reduce(0) { $0 + $1.protein },
+            carbs:    all.reduce(0) { $0 + $1.carbs },
+            fat:      all.reduce(0) { $0 + $1.fat },
+            sugar:    all.reduce(0) { $0 + $1.sugar }
+        )
     }
-    
-    private let oatmealMacros = Macros(calories: 210, protein: 7, carbs: 38, fat: 4, sugar: 12)
-    private let proteinPowderMacros = Macros(calories: 120, protein: 24, carbs: 3, fat: 1, sugar: 1)
-    private let flatWhiteMacros = Macros(calories: 180, protein: 9, carbs: 14, fat: 10, sugar: 13)
-    private let pizzaMacros = Macros(calories: 290, protein: 12, carbs: 36, fat: 11, sugar: 4)
-    private let bagelMacros = Macros(calories: 450, protein: 16, carbs: 54, fat: 18, sugar: 6)
-    private let loxMacros = Macros(calories: 150, protein: 20, carbs: 0, fat: 7, sugar: 0)
-    
-    private var breakfastCalories: Int {
-        var total = 0
-        if oatmealChecked { total += oatmealMacros.calories }
-        if oatmealChecked && proteinPowderChecked { total += proteinPowderMacros.calories }
-        if flatWhiteChecked { total += flatWhiteMacros.calories }
-        return total
-    }
-    
-    private var generalCalories: Int {
-        var total = 0
-        total += pizzaSlices * pizzaMacros.calories
-        if bagelChecked { total += bagelMacros.calories }
-        if bagelChecked && loxChecked { total += loxMacros.calories }
-        return total
-    }
-    
-    private var totalConsumed: Int {
-        breakfastCalories + generalCalories
-    }
-    
-    private var totalProtein: Int {
-        var total = 0
-        if oatmealChecked { total += oatmealMacros.protein }
-        if oatmealChecked && proteinPowderChecked { total += proteinPowderMacros.protein }
-        if flatWhiteChecked { total += flatWhiteMacros.protein }
-        total += pizzaSlices * pizzaMacros.protein
-        if bagelChecked { total += bagelMacros.protein }
-        if bagelChecked && loxChecked { total += loxMacros.protein }
-        return total
-    }
-    
-    private var totalCarbs: Int {
-        var total = 0
-        if oatmealChecked { total += oatmealMacros.carbs }
-        if oatmealChecked && proteinPowderChecked { total += proteinPowderMacros.carbs }
-        if flatWhiteChecked { total += flatWhiteMacros.carbs }
-        total += pizzaSlices * pizzaMacros.carbs
-        if bagelChecked { total += bagelMacros.carbs }
-        if bagelChecked && loxChecked { total += loxMacros.carbs }
-        return total
-    }
-    
-    private var totalFat: Int {
-        var total = 0
-        if oatmealChecked { total += oatmealMacros.fat }
-        if oatmealChecked && proteinPowderChecked { total += proteinPowderMacros.fat }
-        if flatWhiteChecked { total += flatWhiteMacros.fat }
-        total += pizzaSlices * pizzaMacros.fat
-        if bagelChecked { total += bagelMacros.fat }
-        if bagelChecked && loxChecked { total += loxMacros.fat }
-        return total
-    }
-    
-    private var totalSugar: Int {
-        var total = 0
-        if oatmealChecked { total += oatmealMacros.sugar }
-        if oatmealChecked && proteinPowderChecked { total += proteinPowderMacros.sugar }
-        if flatWhiteChecked { total += flatWhiteMacros.sugar }
-        total += pizzaSlices * pizzaMacros.sugar
-        if bagelChecked { total += bagelMacros.sugar }
-        if bagelChecked && loxChecked { total += loxMacros.sugar }
-        return total
-    }
-    
-    private var remainingForMeals: Int {
-        max(0, dailyTarget - totalConsumed)
-    }
-    
-    private var lunchBudget: Int {
-        Int(Double(remainingForMeals) * lunchDinnerSplit)
-    }
-    
-    private var dinnerBudget: Int {
-        remainingForMeals - lunchBudget
-    }
-    
+
+    private var remainingForMeals: Int { max(0, dailyTarget - consumedMacros.calories) }
+    private var lunchBudget: Int { Int(Double(remainingForMeals) * lunchDinnerSplit) }
+    private var dinnerBudget: Int { remainingForMeals - lunchBudget }
+
     var body: some View {
         NavigationStack {
             List {
@@ -120,14 +79,14 @@ struct NutritionView: View {
                             Text("Daily Target")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
-                            Text("\(totalConsumed) / \(dailyTarget) kcal")
+                            Text("\(consumedMacros.calories) / \(dailyTarget) kcal")
                                 .font(.title)
                                 .fontWeight(.bold)
                         }
                         Spacer()
                         CircularProgressView(
-                            progress: Double(totalConsumed) / Double(dailyTarget),
-                            color: totalConsumed > dailyTarget ? .red : .green
+                            progress: Double(consumedMacros.calories) / Double(dailyTarget),
+                            color: consumedMacros.calories > dailyTarget ? .red : .green
                         )
                         .frame(width: 60, height: 60)
                         .onLongPressGesture(minimumDuration: 1.0) {
@@ -136,43 +95,26 @@ struct NutritionView: View {
                     }
                     .padding(.vertical, 8)
                 }
-                
-                Section("Breakfast") {
-                    Toggle(isOn: $oatmealChecked) {
-                        HStack {
-                            Text("🥣")
-                            Text("Instant Oatmeal")
-                            Spacer()
-                            Text("\(oatmealMacros.calories) kcal")
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    
-                    if oatmealChecked {
-                        Toggle(isOn: $proteinPowderChecked) {
-                            HStack {
-                                Image(systemName: "plus.circle.fill")
-                                    .foregroundStyle(.blue)
-                                Text("Protein Powder")
-                                Spacer()
-                                Text("+\(proteinPowderMacros.calories) kcal")
-                                    .foregroundStyle(.secondary)
+
+                ForEach(MealSection.allCases, id: \.self) { section in
+                    Section(section.rawValue) {
+                        ForEach(allMeals.filter { $0.section == section }) { meal in
+                            Toggle(isOn: Binding(
+                                get: { checkedIDs.contains(meal.id) },
+                                set: { if $0 { checkedIDs.insert(meal.id) } else { checkedIDs.remove(meal.id) } }
+                            )) {
+                                HStack {
+                                    Text(meal.emoji)
+                                    Text(meal.name)
+                                    Spacer()
+                                    Text("\(meal.macros.calories) kcal")
+                                        .foregroundStyle(.secondary)
+                                }
                             }
-                        }
-                        .padding(.leading, 24)
-                    }
-                    
-                    Toggle(isOn: $flatWhiteChecked) {
-                        HStack {
-                            Text("☕️")
-                            Text("Flat White (10oz)")
-                            Spacer()
-                            Text("\(flatWhiteMacros.calories) kcal")
-                                .foregroundStyle(.secondary)
                         }
                     }
                 }
-                
+
                 Section("General") {
                     Stepper(value: $pizzaSlices, in: 0...10) {
                         HStack {
@@ -188,38 +130,14 @@ struct NutritionView: View {
                             }
                         }
                     }
-                    
-                    Toggle(isOn: $bagelChecked) {
-                        HStack {
-                            Text("🥯")
-                            Text("Cream cheese bagel")
-                            Spacer()
-                            Text("\(bagelMacros.calories) kcal")
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    
-                    if bagelChecked {
-                        Toggle(isOn: $loxChecked) {
-                            HStack {
-                                Image(systemName: "plus.circle.fill")
-                                    .foregroundStyle(.blue)
-                                Text("Lox")
-                                Spacer()
-                                Text("+\(loxMacros.calories) kcal")
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .padding(.leading, 24)
-                    }
                 }
-                
+
                 Section("Lunch & Dinner Budget") {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Remaining: \(remainingForMeals) kcal")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
-                        
+
                         HStack {
                             VStack(alignment: .leading) {
                                 Text("Lunch")
@@ -230,9 +148,7 @@ struct NutritionView: View {
                                     .fontWeight(.semibold)
                                     .foregroundStyle(.orange)
                             }
-                            
                             Spacer()
-                            
                             VStack(alignment: .trailing) {
                                 Text("Dinner")
                                     .font(.caption)
@@ -243,10 +159,10 @@ struct NutritionView: View {
                                     .foregroundStyle(.purple)
                             }
                         }
-                        
+
                         Slider(value: $lunchDinnerSplit, in: 0.3...0.7, step: 0.05)
                             .tint(.orange)
-                        
+
                         Text("Lunch \(Int(lunchDinnerSplit * 100))% / Dinner \(Int((1 - lunchDinnerSplit) * 100))%")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -254,29 +170,29 @@ struct NutritionView: View {
                     }
                     .padding(.vertical, 8)
                 }
-                
+
                 Section("Macros") {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Protein")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
-                            Text("\(totalProtein) / \(proteinTarget)g")
+                            Text("\(consumedMacros.protein) / \(proteinTarget)g")
                                 .font(.title2)
                                 .fontWeight(.bold)
                         }
                         Spacer()
                         CircularProgressView(
-                            progress: Double(totalProtein) / Double(proteinTarget),
-                            color: totalProtein >= proteinTarget ? .green : .blue
+                            progress: Double(consumedMacros.protein) / Double(proteinTarget),
+                            color: consumedMacros.protein >= proteinTarget ? .green : .blue
                         )
                         .frame(width: 50, height: 50)
                     }
                     .padding(.vertical, 8)
-                    
-                    MacroBarView(label: "Carbs", value: totalCarbs, color: .orange)
-                    MacroBarView(label: "Fat", value: totalFat, color: .purple)
-                    MacroBarView(label: "Sugar", value: totalSugar, color: .pink)
+
+                    MacroBarView(label: "Carbs", value: consumedMacros.carbs, color: .orange)
+                    MacroBarView(label: "Fat",   value: consumedMacros.fat,   color: .purple)
+                    MacroBarView(label: "Sugar", value: consumedMacros.sugar, color: .pink)
                 }
             }
             .navigationTitle("Nutrition")
@@ -297,7 +213,7 @@ struct MacroBarView: View {
     let label: String
     let value: Int
     let color: Color
-    
+
     var body: some View {
         HStack {
             Text(label)
@@ -325,18 +241,16 @@ struct MacroBarView: View {
 struct CircularProgressView: View {
     let progress: Double
     let color: Color
-    
+
     var body: some View {
         ZStack {
             Circle()
                 .stroke(color.opacity(0.2), lineWidth: 6)
-            
             Circle()
                 .trim(from: 0, to: min(progress, 1.0))
                 .stroke(color, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(.easeInOut, value: progress)
-            
             Text("\(Int(progress * 100))%")
                 .font(.caption2)
                 .fontWeight(.bold)
