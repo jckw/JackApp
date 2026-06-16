@@ -7,6 +7,13 @@ fastlane/Preview.html
 fastlane/screenshots
 fastlane/test_output
 
+# Signing certificates / keys (never commit)
+certs/
+*.p12
+*.cer
+*.p8
+*.mobileprovision
+
 # Build artifacts
 *.ipa
 *.dSYM.zip

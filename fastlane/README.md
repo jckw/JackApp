@@ -15,6 +15,14 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 ## iOS
 
+### ios certificates
+
+```sh
+[bundle exec] fastlane ios certificates
+```
+
+Create/fetch the Apple Distribution certificate and install it into the local keychain (run once, locally)
+
 ### ios beta
 
 ```sh

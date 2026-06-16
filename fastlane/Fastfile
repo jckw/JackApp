@@ -3,6 +3,25 @@ require 'dotenv/load'
 default_platform(:ios)
 
 platform :ios do
+  desc "Create/fetch the Apple Distribution certificate and install it into the local keychain (run once, locally)"
+  lane :certificates do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"],
+      issuer_id: ENV["ASC_ISSUER_ID"],
+      key_content: ENV["ASC_KEY_CONTENT"],
+      is_key_content_base64: true
+    )
+
+    # Creates a new Apple Distribution cert (or reuses an existing one whose key
+    # is present) for the team in the Appfile, installs it into the keychain,
+    # and writes the .cer/.p12 to ./certs.
+    cert(
+      api_key: api_key,
+      development: false,
+      output_path: "./certs"
+    )
+  end
+
   desc "Build and upload to TestFlight"
   lane :beta do
     # Load API key from environment
@@ -13,9 +32,16 @@ platform :ios do
       is_key_content_base64: true
     )
 
-    # Increment build number
+    # Derive the next build number from TestFlight so CI runs stay unique
+    # without committing the bumped value back to the repo.
+    latest_build = latest_testflight_build_number(
+      api_key: api_key,
+      app_identifier: "systems.weekend.JackApp",
+      initial_build_number: 0
+    )
     increment_build_number(
-      xcodeproj: "JackApp.xcodeproj"
+      xcodeproj: "JackApp.xcodeproj",
+      build_number: latest_build + 1
     )
 
     # Build the app
