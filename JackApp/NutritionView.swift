@@ -30,19 +30,174 @@ enum MealSection: String, CaseIterable {
 }
 
 private let allMeals: [Meal] = [
-    Meal(id: "oatmeal_whey",      emoji: "🥣", name: "Oatmeal + whey",                                    section: .breakfast, macros: Macros(calories: 330, protein: 31, carbs: 41, fat:  5, sugar: 13)),
-    Meal(id: "greek_yog",         emoji: "🫙", name: "200g 0% Greek yog, whey, forest fruits",             section: .breakfast, macros: Macros(calories: 285, protein: 45, carbs: 23, fat:  1, sugar: 15)),
-    Meal(id: "lucky_charms",      emoji: "🌈", name: "Cup of dry Lucky Charms",                            section: .snacks,    macros: Macros(calories: 150, protein:  3, carbs: 30, fat:  2, sugar: 13)),
-    Meal(id: "barebells",         emoji: "🍫", name: "Barebells protein bar",                              section: .snacks,    macros: Macros(calories: 200, protein: 20, carbs: 15, fat:  7, sugar:  1)),
-    Meal(id: "fig_bar",           emoji: "🍪", name: "Fig bar",                                            section: .snacks,    macros: Macros(calories: 100, protein:  1, carbs: 20, fat:  2, sugar: 11)),
-    Meal(id: "rice_krispies",     emoji: "🍘", name: "Rice Krispies treat",                               section: .snacks,    macros: Macros(calories:  90, protein:  1, carbs: 17, fat:  2, sugar:  8)),
-    Meal(id: "small_bagel",       emoji: "🥯", name: "Smaller bagel w cream cheese",                      section: .meals,     macros: Macros(calories: 270, protein:  8, carbs: 38, fat:  8, sugar:  4)),
-    Meal(id: "normal_bagel",      emoji: "🥯", name: "Normal bagel w cream cheese",                       section: .meals,     macros: Macros(calories: 450, protein: 16, carbs: 54, fat: 18, sugar:  6)),
-    Meal(id: "sweetgreen",        emoji: "🥗", name: "850 kcal double chicken Sweetgreen",                section: .meals,     macros: Macros(calories: 850, protein: 65, carbs: 65, fat: 30, sugar: 10)),
-    Meal(id: "bone_broth_bowl",   emoji: "🍲", name: "200g bone broth rice, 180g chicken thigh, broccoli", section: .meals,   macros: Macros(calories: 615, protein: 54, carbs: 63, fat: 15, sugar:  3)),
+    // MARK: - Breakfast
+
+    Meal(
+        id: "oatmeal_whey",
+        emoji: "🥣",
+        name: "Oatmeal + whey",
+        section: .breakfast,
+        macros: Macros(
+            calories: 330,
+            protein: 31,
+            carbs: 41,
+            fat: 5,
+            sugar: 13
+        )
+    ),
+
+    Meal(
+        id: "greek_yog_whey_fruit",
+        emoji: "🫙",
+        name: "200g 0% Greek yog, whey, forest fruits",
+        section: .breakfast,
+        macros: Macros(
+            calories: 285,
+            protein: 45,
+            carbs: 23,
+            fat: 1,
+            sugar: 15
+        )
+    ),
+
+    // MARK: - Snacks
+
+    Meal(
+        id: "lucky_charms_cup",
+        emoji: "🌈",
+        name: "Cup of dry Lucky Charms",
+        section: .snacks,
+        macros: Macros(
+            calories: 140,
+            protein: 3,
+            carbs: 30,
+            fat: 2,
+            sugar: 12
+        )
+    ),
+
+    Meal(
+        id: "barebells_bar",
+        emoji: "🍫",
+        name: "Barebells protein bar",
+        section: .snacks,
+        macros: Macros(
+            calories: 200,
+            protein: 20,
+            carbs: 15,
+            fat: 7,
+            sugar: 1
+        )
+    ),
+
+    Meal(
+        id: "fig_bar_packet",
+        emoji: "🍪",
+        name: "Fig bar packet",
+        section: .snacks,
+        macros: Macros(
+            calories: 200,
+            protein: 3,
+            carbs: 38,
+            fat: 5,
+            sugar: 19
+        )
+    ),
+
+    Meal(
+        id: "rice_krispies_treat",
+        emoji: "🍘",
+        name: "Rice Krispies Treat",
+        section: .snacks,
+        macros: Macros(
+            calories: 90,
+            protein: 1,
+            carbs: 17,
+            fat: 2,
+            sugar: 8
+        )
+    ),
+
+    // MARK: - Meals
+
+    Meal(
+        id: "small_bagel_cream_cheese",
+        emoji: "🥯",
+        name: "Smaller bagel w cream cheese",
+        section: .meals,
+        macros: Macros(
+            calories: 350,
+            protein: 10,
+            carbs: 50,
+            fat: 11,
+            sugar: 5
+        )
+    ),
+
+    Meal(
+        id: "normal_bagel_cream_cheese",
+        emoji: "🥯",
+        name: "Normal bagel w cream cheese",
+        section: .meals,
+        macros: Macros(
+            calories: 520,
+            protein: 16,
+            carbs: 65,
+            fat: 20,
+            sugar: 7
+        )
+    ),
+
+    Meal(
+        id: "sweetgreen_hot_honey_chicken",
+        emoji: "🥗",
+        name: "Sweetgreen Hot Honey Chicken",
+        section: .meals,
+        macros: Macros(
+            calories: 875,
+            protein: 49,
+            carbs: 68,
+            fat: 41,
+            sugar: 10
+        )
+    ),
+
+    Meal(
+        id: "sweetgreen_double_chicken_bowl",
+        emoji: "🥗",
+        name: "Sweetgreen double chicken bowl",
+        section: .meals,
+        macros: Macros(
+            calories: 850,
+            protein: 55,
+            carbs: 65,
+            fat: 35,
+            sugar: 10
+        )
+    ),
+
+    Meal(
+        id: "bone_broth_rice_chicken_broccoli",
+        emoji: "🍲",
+        name: "200g bone broth rice, 180g chicken thigh, broccoli",
+        section: .meals,
+        macros: Macros(
+            calories: 650,
+            protein: 54,
+            carbs: 63,
+            fat: 20,
+            sugar: 3
+        )
+    )
 ]
 
-private let pizzaMacros = Macros(calories: 290, protein: 12, carbs: 36, fat: 11, sugar: 4)
+private let pizzaMacros = Macros(
+    calories: 350,
+    protein: 14,
+    carbs: 40,
+    fat: 15,
+    sugar: 4
+)
 
 struct NutritionView: View {
     private let dailyTarget = 1950
