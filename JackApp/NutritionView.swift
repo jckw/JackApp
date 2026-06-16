@@ -11,15 +11,20 @@ struct NutritionView: View {
     private let dailyTarget = 1950
     private let proteinTarget = 150
 
-    @State private var oatmealChecked = false
-    @State private var showingBodyProgress = false
-    @State private var proteinPowderChecked = false
-    @State private var flatWhiteChecked = false
+    @State private var oatmealWheyChecked = false
+    @State private var greekYogurtChecked = false
+    @State private var luckyCharmsChecked = false
+    @State private var bareballsChecked = false
+    @State private var figBarChecked = false
+    @State private var riceKrispiesChecked = false
+    @State private var smallBagelChecked = false
+    @State private var normalBagelChecked = false
+    @State private var sweetgreenChecked = false
+    @State private var boneBrothBowlChecked = false
     @State private var pizzaSlices = 0
-    @State private var bagelChecked = false
-    @State private var loxChecked = false
+    @State private var showingBodyProgress = false
     @State private var lunchDinnerSplit: Double = 0.6
-    
+
     struct Macros {
         let calories: Int
         let protein: Int
@@ -27,90 +32,53 @@ struct NutritionView: View {
         let fat: Int
         let sugar: Int
     }
-    
-    private let oatmealMacros = Macros(calories: 210, protein: 7, carbs: 38, fat: 4, sugar: 12)
-    private let proteinPowderMacros = Macros(calories: 120, protein: 24, carbs: 3, fat: 1, sugar: 1)
-    private let flatWhiteMacros = Macros(calories: 180, protein: 9, carbs: 14, fat: 10, sugar: 13)
+
+    private let oatmealWheyMacros = Macros(calories: 330, protein: 31, carbs: 41, fat: 5, sugar: 13)
+    private let greekYogurtMacros = Macros(calories: 285, protein: 45, carbs: 23, fat: 1, sugar: 15)
+    private let luckyCharmsMacros = Macros(calories: 150, protein: 3, carbs: 30, fat: 2, sugar: 13)
+    private let bareballsMacros = Macros(calories: 200, protein: 20, carbs: 15, fat: 7, sugar: 1)
+    private let figBarMacros = Macros(calories: 100, protein: 1, carbs: 20, fat: 2, sugar: 11)
+    private let riceKrispiesMacros = Macros(calories: 90, protein: 1, carbs: 17, fat: 2, sugar: 8)
+    private let smallBagelMacros = Macros(calories: 270, protein: 8, carbs: 38, fat: 8, sugar: 4)
+    private let normalBagelMacros = Macros(calories: 450, protein: 16, carbs: 54, fat: 18, sugar: 6)
+    private let sweetgreenMacros = Macros(calories: 850, protein: 65, carbs: 65, fat: 30, sugar: 10)
+    private let boneBrothBowlMacros = Macros(calories: 615, protein: 54, carbs: 63, fat: 15, sugar: 3)
     private let pizzaMacros = Macros(calories: 290, protein: 12, carbs: 36, fat: 11, sugar: 4)
-    private let bagelMacros = Macros(calories: 450, protein: 16, carbs: 54, fat: 18, sugar: 6)
-    private let loxMacros = Macros(calories: 150, protein: 20, carbs: 0, fat: 7, sugar: 0)
-    
-    private var breakfastCalories: Int {
-        var total = 0
-        if oatmealChecked { total += oatmealMacros.calories }
-        if oatmealChecked && proteinPowderChecked { total += proteinPowderMacros.calories }
-        if flatWhiteChecked { total += flatWhiteMacros.calories }
-        return total
+
+    private var allConsumed: [Macros] {
+        var items: [Macros] = []
+        if oatmealWheyChecked { items.append(oatmealWheyMacros) }
+        if greekYogurtChecked { items.append(greekYogurtMacros) }
+        if luckyCharmsChecked { items.append(luckyCharmsMacros) }
+        if bareballsChecked { items.append(bareballsMacros) }
+        if figBarChecked { items.append(figBarMacros) }
+        if riceKrispiesChecked { items.append(riceKrispiesMacros) }
+        if smallBagelChecked { items.append(smallBagelMacros) }
+        if normalBagelChecked { items.append(normalBagelMacros) }
+        if sweetgreenChecked { items.append(sweetgreenMacros) }
+        if boneBrothBowlChecked { items.append(boneBrothBowlMacros) }
+        for _ in 0..<pizzaSlices { items.append(pizzaMacros) }
+        return items
     }
-    
-    private var generalCalories: Int {
-        var total = 0
-        total += pizzaSlices * pizzaMacros.calories
-        if bagelChecked { total += bagelMacros.calories }
-        if bagelChecked && loxChecked { total += loxMacros.calories }
-        return total
-    }
-    
-    private var totalConsumed: Int {
-        breakfastCalories + generalCalories
-    }
-    
-    private var totalProtein: Int {
-        var total = 0
-        if oatmealChecked { total += oatmealMacros.protein }
-        if oatmealChecked && proteinPowderChecked { total += proteinPowderMacros.protein }
-        if flatWhiteChecked { total += flatWhiteMacros.protein }
-        total += pizzaSlices * pizzaMacros.protein
-        if bagelChecked { total += bagelMacros.protein }
-        if bagelChecked && loxChecked { total += loxMacros.protein }
-        return total
-    }
-    
-    private var totalCarbs: Int {
-        var total = 0
-        if oatmealChecked { total += oatmealMacros.carbs }
-        if oatmealChecked && proteinPowderChecked { total += proteinPowderMacros.carbs }
-        if flatWhiteChecked { total += flatWhiteMacros.carbs }
-        total += pizzaSlices * pizzaMacros.carbs
-        if bagelChecked { total += bagelMacros.carbs }
-        if bagelChecked && loxChecked { total += loxMacros.carbs }
-        return total
-    }
-    
-    private var totalFat: Int {
-        var total = 0
-        if oatmealChecked { total += oatmealMacros.fat }
-        if oatmealChecked && proteinPowderChecked { total += proteinPowderMacros.fat }
-        if flatWhiteChecked { total += flatWhiteMacros.fat }
-        total += pizzaSlices * pizzaMacros.fat
-        if bagelChecked { total += bagelMacros.fat }
-        if bagelChecked && loxChecked { total += loxMacros.fat }
-        return total
-    }
-    
-    private var totalSugar: Int {
-        var total = 0
-        if oatmealChecked { total += oatmealMacros.sugar }
-        if oatmealChecked && proteinPowderChecked { total += proteinPowderMacros.sugar }
-        if flatWhiteChecked { total += flatWhiteMacros.sugar }
-        total += pizzaSlices * pizzaMacros.sugar
-        if bagelChecked { total += bagelMacros.sugar }
-        if bagelChecked && loxChecked { total += loxMacros.sugar }
-        return total
-    }
-    
+
+    private var totalConsumed: Int { allConsumed.reduce(0) { $0 + $1.calories } }
+    private var totalProtein: Int { allConsumed.reduce(0) { $0 + $1.protein } }
+    private var totalCarbs: Int { allConsumed.reduce(0) { $0 + $1.carbs } }
+    private var totalFat: Int { allConsumed.reduce(0) { $0 + $1.fat } }
+    private var totalSugar: Int { allConsumed.reduce(0) { $0 + $1.sugar } }
+
     private var remainingForMeals: Int {
         max(0, dailyTarget - totalConsumed)
     }
-    
+
     private var lunchBudget: Int {
         Int(Double(remainingForMeals) * lunchDinnerSplit)
     }
-    
+
     private var dinnerBudget: Int {
         remainingForMeals - lunchBudget
     }
-    
+
     var body: some View {
         NavigationStack {
             List {
@@ -136,43 +104,113 @@ struct NutritionView: View {
                     }
                     .padding(.vertical, 8)
                 }
-                
+
                 Section("Breakfast") {
-                    Toggle(isOn: $oatmealChecked) {
+                    Toggle(isOn: $oatmealWheyChecked) {
                         HStack {
                             Text("🥣")
-                            Text("Instant Oatmeal")
+                            Text("Oatmeal + whey")
                             Spacer()
-                            Text("\(oatmealMacros.calories) kcal")
+                            Text("\(oatmealWheyMacros.calories) kcal")
                                 .foregroundStyle(.secondary)
                         }
                     }
-                    
-                    if oatmealChecked {
-                        Toggle(isOn: $proteinPowderChecked) {
-                            HStack {
-                                Image(systemName: "plus.circle.fill")
-                                    .foregroundStyle(.blue)
-                                Text("Protein Powder")
-                                Spacer()
-                                Text("+\(proteinPowderMacros.calories) kcal")
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .padding(.leading, 24)
-                    }
-                    
-                    Toggle(isOn: $flatWhiteChecked) {
+
+                    Toggle(isOn: $greekYogurtChecked) {
                         HStack {
-                            Text("☕️")
-                            Text("Flat White (10oz)")
+                            Text("🫙")
+                            Text("200g 0% Greek yog, whey, forest fruits")
                             Spacer()
-                            Text("\(flatWhiteMacros.calories) kcal")
+                            Text("\(greekYogurtMacros.calories) kcal")
                                 .foregroundStyle(.secondary)
                         }
                     }
                 }
-                
+
+                Section("Snacks") {
+                    Toggle(isOn: $luckyCharmsChecked) {
+                        HStack {
+                            Text("🌈")
+                            Text("Cup of dry Lucky Charms")
+                            Spacer()
+                            Text("\(luckyCharmsMacros.calories) kcal")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Toggle(isOn: $bareballsChecked) {
+                        HStack {
+                            Text("🍫")
+                            Text("Barebells protein bar")
+                            Spacer()
+                            Text("\(bareballsMacros.calories) kcal")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Toggle(isOn: $figBarChecked) {
+                        HStack {
+                            Text("🍪")
+                            Text("Fig bar")
+                            Spacer()
+                            Text("\(figBarMacros.calories) kcal")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Toggle(isOn: $riceKrispiesChecked) {
+                        HStack {
+                            Text("🍘")
+                            Text("Rice Krispies treat")
+                            Spacer()
+                            Text("\(riceKrispiesMacros.calories) kcal")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                Section("Meals") {
+                    Toggle(isOn: $smallBagelChecked) {
+                        HStack {
+                            Text("🥯")
+                            Text("Smaller bagel w cream cheese")
+                            Spacer()
+                            Text("\(smallBagelMacros.calories) kcal")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Toggle(isOn: $normalBagelChecked) {
+                        HStack {
+                            Text("🥯")
+                            Text("Normal bagel w cream cheese")
+                            Spacer()
+                            Text("\(normalBagelMacros.calories) kcal")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Toggle(isOn: $sweetgreenChecked) {
+                        HStack {
+                            Text("🥗")
+                            Text("850 kcal double chicken Sweetgreen")
+                            Spacer()
+                            Text("\(sweetgreenMacros.calories) kcal")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Toggle(isOn: $boneBrothBowlChecked) {
+                        HStack {
+                            Text("🍲")
+                            Text("200g bone broth rice, 180g chicken thigh, broccoli")
+                            Spacer()
+                            Text("\(boneBrothBowlMacros.calories) kcal")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
                 Section("General") {
                     Stepper(value: $pizzaSlices, in: 0...10) {
                         HStack {
@@ -188,38 +226,14 @@ struct NutritionView: View {
                             }
                         }
                     }
-                    
-                    Toggle(isOn: $bagelChecked) {
-                        HStack {
-                            Text("🥯")
-                            Text("Cream cheese bagel")
-                            Spacer()
-                            Text("\(bagelMacros.calories) kcal")
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    
-                    if bagelChecked {
-                        Toggle(isOn: $loxChecked) {
-                            HStack {
-                                Image(systemName: "plus.circle.fill")
-                                    .foregroundStyle(.blue)
-                                Text("Lox")
-                                Spacer()
-                                Text("+\(loxMacros.calories) kcal")
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .padding(.leading, 24)
-                    }
                 }
-                
+
                 Section("Lunch & Dinner Budget") {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Remaining: \(remainingForMeals) kcal")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
-                        
+
                         HStack {
                             VStack(alignment: .leading) {
                                 Text("Lunch")
@@ -230,9 +244,9 @@ struct NutritionView: View {
                                     .fontWeight(.semibold)
                                     .foregroundStyle(.orange)
                             }
-                            
+
                             Spacer()
-                            
+
                             VStack(alignment: .trailing) {
                                 Text("Dinner")
                                     .font(.caption)
@@ -243,10 +257,10 @@ struct NutritionView: View {
                                     .foregroundStyle(.purple)
                             }
                         }
-                        
+
                         Slider(value: $lunchDinnerSplit, in: 0.3...0.7, step: 0.05)
                             .tint(.orange)
-                        
+
                         Text("Lunch \(Int(lunchDinnerSplit * 100))% / Dinner \(Int((1 - lunchDinnerSplit) * 100))%")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -254,7 +268,7 @@ struct NutritionView: View {
                     }
                     .padding(.vertical, 8)
                 }
-                
+
                 Section("Macros") {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
@@ -273,7 +287,7 @@ struct NutritionView: View {
                         .frame(width: 50, height: 50)
                     }
                     .padding(.vertical, 8)
-                    
+
                     MacroBarView(label: "Carbs", value: totalCarbs, color: .orange)
                     MacroBarView(label: "Fat", value: totalFat, color: .purple)
                     MacroBarView(label: "Sugar", value: totalSugar, color: .pink)
@@ -297,7 +311,7 @@ struct MacroBarView: View {
     let label: String
     let value: Int
     let color: Color
-    
+
     var body: some View {
         HStack {
             Text(label)
@@ -325,18 +339,18 @@ struct MacroBarView: View {
 struct CircularProgressView: View {
     let progress: Double
     let color: Color
-    
+
     var body: some View {
         ZStack {
             Circle()
                 .stroke(color.opacity(0.2), lineWidth: 6)
-            
+
             Circle()
                 .trim(from: 0, to: min(progress, 1.0))
                 .stroke(color, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(.easeInOut, value: progress)
-            
+
             Text("\(Int(progress * 100))%")
                 .font(.caption2)
                 .fontWeight(.bold)
