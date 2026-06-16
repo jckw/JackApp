@@ -39,15 +39,15 @@ struct MacroTargets {
 enum DayType: String, CaseIterable, Identifiable {
     case rest = "Rest"
     case training = "Training"
-    case endurance = "Endurance"
+    case endurance = "Long run"
 
     var id: String { rawValue }
 
     var targets: MacroTargets {
         switch self {
-        case .rest:      return MacroTargets(calories: 2150, protein: 170, carbs: 220, fat: 65)
-        case .training:  return MacroTargets(calories: 2650, protein: 175, carbs: 330, fat: 70)
-        case .endurance: return MacroTargets(calories: 3100, protein: 180, carbs: 450, fat: 75)
+        case .rest:      return MacroTargets(calories: 1900, protein: 175, carbs: 165, fat: 60)
+        case .training:  return MacroTargets(calories: 2450, protein: 175, carbs: 310, fat: 57)
+        case .endurance: return MacroTargets(calories: 2950, protein: 180, carbs: 420, fat: 61)
         }
     }
 }
