@@ -29,6 +29,29 @@ enum MealSection: String, CaseIterable {
     case meals = "Meals"
 }
 
+struct MacroTargets {
+    let calories: Int
+    let protein: Int
+    let carbs: Int
+    let fat: Int
+}
+
+enum DayType: String, CaseIterable, Identifiable {
+    case rest = "Rest"
+    case training = "Training"
+    case endurance = "Endurance"
+
+    var id: String { rawValue }
+
+    var targets: MacroTargets {
+        switch self {
+        case .rest:      return MacroTargets(calories: 2150, protein: 170, carbs: 220, fat: 65)
+        case .training:  return MacroTargets(calories: 2650, protein: 175, carbs: 330, fat: 70)
+        case .endurance: return MacroTargets(calories: 3100, protein: 180, carbs: 450, fat: 75)
+        }
+    }
+}
+
 private let allMeals: [Meal] = [
     // MARK: - Breakfast
 
@@ -118,6 +141,20 @@ private let allMeals: [Meal] = [
         )
     ),
 
+    Meal(
+        id: "flat_white",
+        emoji: "☕️",
+        name: "Flat White (10oz)",
+        section: .snacks,
+        macros: Macros(
+            calories: 180,
+            protein: 9,
+            carbs: 14,
+            fat: 10,
+            sugar: 13
+        )
+    ),
+
     // MARK: - Meals
 
     Meal(
@@ -200,13 +237,14 @@ private let pizzaMacros = Macros(
 )
 
 struct NutritionView: View {
-    private let dailyTarget = 1950
-    private let proteinTarget = 150
-
+    @State private var dayType: DayType = .rest
     @State private var checkedIDs: Set<String> = []
     @State private var pizzaSlices = 0
     @State private var lunchDinnerSplit: Double = 0.6
     @State private var showingBodyProgress = false
+
+    private var dailyTarget: Int { dayType.targets.calories }
+    private var proteinTarget: Int { dayType.targets.protein }
 
     private var consumedMacros: Macros {
         let checked = allMeals.filter { checkedIDs.contains($0.id) }.map(\.macros)
@@ -228,6 +266,15 @@ struct NutritionView: View {
     var body: some View {
         NavigationStack {
             List {
+                Section {
+                    Picker("Day Type", selection: $dayType) {
+                        ForEach(DayType.allCases) { type in
+                            Text(type.rawValue).tag(type)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+
                 Section {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
@@ -345,8 +392,8 @@ struct NutritionView: View {
                     }
                     .padding(.vertical, 8)
 
-                    MacroBarView(label: "Carbs", value: consumedMacros.carbs, color: .orange)
-                    MacroBarView(label: "Fat",   value: consumedMacros.fat,   color: .purple)
+                    MacroBarView(label: "Carbs", value: consumedMacros.carbs, color: .orange, target: dayType.targets.carbs)
+                    MacroBarView(label: "Fat",   value: consumedMacros.fat,   color: .purple, target: dayType.targets.fat)
                     MacroBarView(label: "Sugar", value: consumedMacros.sugar, color: .pink)
                 }
             }
@@ -368,6 +415,17 @@ struct MacroBarView: View {
     let label: String
     let value: Int
     let color: Color
+    var target: Int? = nil
+
+    private var scale: CGFloat {
+        if let target, target > 0 { return CGFloat(target) }
+        return 200
+    }
+
+    private var valueText: String {
+        if let target { return "\(value)/\(target)g" }
+        return "\(value)g"
+    }
 
     var body: some View {
         HStack {
@@ -380,15 +438,15 @@ struct MacroBarView: View {
                         .fill(color.opacity(0.2))
                     RoundedRectangle(cornerRadius: 4)
                         .fill(color)
-                        .frame(width: min(CGFloat(value) / 200.0 * geometry.size.width, geometry.size.width))
+                        .frame(width: min(CGFloat(value) / scale * geometry.size.width, geometry.size.width))
                         .animation(.easeInOut, value: value)
                 }
             }
             .frame(height: 8)
-            Text("\(value)g")
+            Text(valueText)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .frame(width: 50, alignment: .trailing)
+                .frame(width: 64, alignment: .trailing)
         }
     }
 }
