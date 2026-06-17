@@ -14,6 +14,6 @@ struct JackAppApp: App {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(for: BodyPhoto.self)
+        .modelContainer(for: [BodyPhoto.self, NutritionDay.self])
     }
 }

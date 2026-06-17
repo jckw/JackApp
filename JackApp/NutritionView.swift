@@ -5,6 +5,7 @@
 //  Created by Jack on 30/12/2025.
 //
 
+import SwiftData
 import SwiftUI
 
 struct Macros {
@@ -237,6 +238,12 @@ private let pizzaMacros = Macros(
 )
 
 struct NutritionView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
+
+    @State private var healthKit = HealthKitManager()
+    @State private var currentDay: NutritionDay?
+
     @State private var dayType: DayType = .rest
     @State private var checkedIDs: Set<String> = []
     @State private var pizzaSlices = 0
@@ -398,10 +405,54 @@ struct NutritionView: View {
                 }
             }
             .navigationTitle("Nutrition")
+            .task {
+                loadOrCreateDay()
+                await healthKit.requestAuthorization()
+            }
+            .onChange(of: dayType)          { saveDay() }
+            .onChange(of: checkedIDs)       { saveDay() }
+            .onChange(of: pizzaSlices)      { saveDay() }
+            .onChange(of: lunchDinnerSplit) { saveDay() }
+            .onChange(of: scenePhase) {
+                if scenePhase == .background, let day = currentDay {
+                    Task { await healthKit.syncNow(macros: consumedMacros, date: Date(), day: day) }
+                }
+            }
             .fullScreenCover(isPresented: $showingBodyProgress) {
                 BodyProgressView()
             }
         }
+    }
+
+    private func loadOrCreateDay() {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        guard let tomorrow = cal.date(byAdding: .day, value: 1, to: today) else { return }
+
+        let descriptor = FetchDescriptor<NutritionDay>(
+            predicate: #Predicate { $0.date >= today && $0.date < tomorrow }
+        )
+
+        if let existing = try? modelContext.fetch(descriptor).first {
+            currentDay = existing
+            dayType = DayType(rawValue: existing.dayTypeRaw) ?? .rest
+            checkedIDs = Set(existing.selectedMealIDs)
+            pizzaSlices = existing.pizzaSlices
+            lunchDinnerSplit = existing.lunchDinnerSplit
+        } else {
+            let new = NutritionDay(date: today)
+            modelContext.insert(new)
+            currentDay = new
+        }
+    }
+
+    private func saveDay() {
+        guard let day = currentDay else { return }
+        day.dayTypeRaw = dayType.rawValue
+        day.selectedMealIDs = Array(checkedIDs)
+        day.pizzaSlices = pizzaSlices
+        day.lunchDinnerSplit = lunchDinnerSplit
+        healthKit.scheduleSync(macros: consumedMacros, date: Date(), day: day)
     }
 
     private func openBodyProgress() {
