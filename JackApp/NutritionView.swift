@@ -43,11 +43,21 @@ enum DayType: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var targets: MacroTargets {
-        switch self {
-        case .rest:      return MacroTargets(calories: 1900, protein: 175, carbs: 165, fat: 60)
-        case .training:  return MacroTargets(calories: 2450, protein: 175, carbs: 310, fat: 57)
-        case .endurance: return MacroTargets(calories: 2950, protein: 180, carbs: 420, fat: 61)
+    func targets(for mode: NutritionMode) -> MacroTargets {
+        switch mode {
+        case .cut:
+            switch self {
+            case .rest:      return MacroTargets(calories: 1900, protein: 175, carbs: 165, fat: 60)
+            case .training:  return MacroTargets(calories: 2450, protein: 175, carbs: 310, fat: 57)
+            case .endurance: return MacroTargets(calories: 2950, protein: 180, carbs: 420, fat: 61)
+            }
+        case .maintenance:
+            // TDEE estimate via Katch-McArdle (5'11", 27yo male, 170lb, 17% bf) scaled by day-type activity.
+            switch self {
+            case .rest:      return MacroTargets(calories: 2400, protein: 170, carbs: 250, fat: 80)
+            case .training:  return MacroTargets(calories: 2700, protein: 175, carbs: 320, fat: 80)
+            case .endurance: return MacroTargets(calories: 3000, protein: 180, carbs: 390, fat: 80)
+            }
         }
     }
 }
@@ -237,14 +247,16 @@ private let pizzaMacros = Macros(
 )
 
 struct NutritionView: View {
+    @AppStorage(NutritionMode.storageKey) private var nutritionMode: NutritionMode = .default
     @State private var dayType: DayType = .rest
     @State private var checkedIDs: Set<String> = []
     @State private var pizzaSlices = 0
     @State private var lunchDinnerSplit: Double = 0.6
     @State private var showingBodyProgress = false
 
-    private var dailyTarget: Int { dayType.targets.calories }
-    private var proteinTarget: Int { dayType.targets.protein }
+    private var targets: MacroTargets { dayType.targets(for: nutritionMode) }
+    private var dailyTarget: Int { targets.calories }
+    private var proteinTarget: Int { targets.protein }
 
     private var consumedMacros: Macros {
         let checked = allMeals.filter { checkedIDs.contains($0.id) }.map(\.macros)
@@ -392,8 +404,8 @@ struct NutritionView: View {
                     }
                     .padding(.vertical, 8)
 
-                    MacroBarView(label: "Carbs", value: consumedMacros.carbs, color: .orange, target: dayType.targets.carbs)
-                    MacroBarView(label: "Fat",   value: consumedMacros.fat,   color: .purple, target: dayType.targets.fat)
+                    MacroBarView(label: "Carbs", value: consumedMacros.carbs, color: .orange, target: targets.carbs)
+                    MacroBarView(label: "Fat",   value: consumedMacros.fat,   color: .purple, target: targets.fat)
                     MacroBarView(label: "Sugar", value: consumedMacros.sugar, color: .pink)
                 }
             }
