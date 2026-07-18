@@ -20,6 +20,11 @@ struct ContentView: View {
                     Label("Workouts", systemImage: "figure.strengthtraining.traditional")
                 }
 
+            RunningView()
+                .tabItem {
+                    Label("Running", systemImage: "figure.run")
+                }
+
             SettingsView()
                 .tabItem {
                     Label("Settings", systemImage: "gearshape")
