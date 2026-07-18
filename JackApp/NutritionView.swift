@@ -165,6 +165,34 @@ private let allMeals: [Meal] = [
         )
     ),
 
+    Meal(
+        id: "gatorade_20oz",
+        emoji: "🥤",
+        name: "Gatorade (20oz)",
+        section: .snacks,
+        macros: Macros(
+            calories: 140,
+            protein: 0,
+            carbs: 36,
+            fat: 0,
+            sugar: 34
+        )
+    ),
+
+    Meal(
+        id: "pain_au_chocolat",
+        emoji: "🥐",
+        name: "Pain au chocolat",
+        section: .snacks,
+        macros: Macros(
+            calories: 300,
+            protein: 6,
+            carbs: 30,
+            fat: 17,
+            sugar: 9
+        )
+    ),
+
     // MARK: - Meals
 
     Meal(
