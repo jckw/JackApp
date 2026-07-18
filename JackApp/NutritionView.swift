@@ -281,6 +281,7 @@ struct NutritionView: View {
     @State private var pizzaSlices = 0
     @State private var lunchDinnerSplit: Double = 0.6
     @State private var showingBodyProgress = false
+    @State private var macrosMeal: Meal?
 
     private var targets: MacroTargets { dayType.targets(for: nutritionMode) }
     private var dailyTarget: Int { targets.calories }
@@ -351,6 +352,10 @@ struct NutritionView: View {
                                     Spacer()
                                     Text("\(meal.macros.calories) kcal")
                                         .foregroundStyle(.secondary)
+                                }
+                                .contentShape(Rectangle())
+                                .onLongPressGesture {
+                                    showMacros(for: meal)
                                 }
                             }
                         }
@@ -438,10 +443,55 @@ struct NutritionView: View {
                 }
             }
             .navigationTitle("Nutrition")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        reset()
+                    } label: {
+                        Image(systemName: "arrow.counterclockwise")
+                    }
+                    .disabled(checkedIDs.isEmpty && pizzaSlices == 0)
+                }
+            }
             .fullScreenCover(isPresented: $showingBodyProgress) {
                 BodyProgressView()
             }
+            .alert(
+                macrosMeal.map { "\($0.emoji) \($0.name)" } ?? "",
+                isPresented: Binding(
+                    get: { macrosMeal != nil },
+                    set: { if !$0 { macrosMeal = nil } }
+                ),
+                presenting: macrosMeal
+            ) { _ in
+                Button("OK", role: .cancel) {}
+            } message: { meal in
+                Text(
+                    """
+                    \(meal.macros.calories) kcal
+                    Protein \(meal.macros.protein)g
+                    Carbs \(meal.macros.carbs)g
+                    Fat \(meal.macros.fat)g
+                    Sugar \(meal.macros.sugar)g
+                    """
+                )
+            }
         }
+    }
+
+    private func reset() {
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
+        withAnimation {
+            checkedIDs.removeAll()
+            pizzaSlices = 0
+        }
+    }
+
+    private func showMacros(for meal: Meal) {
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
+        macrosMeal = meal
     }
 
     private func openBodyProgress() {
