@@ -282,6 +282,7 @@ struct NutritionView: View {
     @State private var lunchDinnerSplit: Double = 0.6
     @State private var showingBodyProgress = false
     @State private var macrosMeal: Meal?
+    @State private var justCopied = false
 
     private var targets: MacroTargets { dayType.targets(for: nutritionMode) }
     private var dailyTarget: Int { targets.calories }
@@ -446,6 +447,14 @@ struct NutritionView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
+                        copyMarkdown()
+                    } label: {
+                        Image(systemName: justCopied ? "checkmark" : "doc.on.doc")
+                    }
+                    .disabled(checkedIDs.isEmpty && pizzaSlices == 0)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
                         reset()
                     } label: {
                         Image(systemName: "arrow.counterclockwise")
@@ -486,6 +495,50 @@ struct NutritionView: View {
             checkedIDs.removeAll()
             pizzaSlices = 0
         }
+    }
+
+    private func copyMarkdown() {
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+        UIPasteboard.general.string = markdownSummary()
+        withAnimation { justCopied = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation { justCopied = false }
+        }
+    }
+
+    private func markdownSummary() -> String {
+        var lines: [String] = []
+        lines.append("# Nutrition — \(dayType.rawValue) day")
+        lines.append("")
+
+        for section in MealSection.allCases {
+            let selected = allMeals.filter { $0.section == section && checkedIDs.contains($0.id) }
+            guard !selected.isEmpty else { continue }
+            lines.append("## \(section.rawValue)")
+            for meal in selected {
+                lines.append("- \(meal.emoji) \(meal.name) — \(meal.macros.calories) kcal "
+                    + "(P\(meal.macros.protein) / C\(meal.macros.carbs) / F\(meal.macros.fat) / S\(meal.macros.sugar))")
+            }
+            lines.append("")
+        }
+
+        if pizzaSlices > 0 {
+            lines.append("## General")
+            lines.append("- 🍕 Pizza Slice ×\(pizzaSlices) — \(pizzaSlices * pizzaMacros.calories) kcal "
+                + "(P\(pizzaSlices * pizzaMacros.protein) / C\(pizzaSlices * pizzaMacros.carbs) / "
+                + "F\(pizzaSlices * pizzaMacros.fat) / S\(pizzaSlices * pizzaMacros.sugar))")
+            lines.append("")
+        }
+
+        lines.append("## Totals")
+        lines.append("- Calories: \(consumedMacros.calories) / \(dailyTarget) kcal")
+        lines.append("- Protein: \(consumedMacros.protein) / \(proteinTarget) g")
+        lines.append("- Carbs: \(consumedMacros.carbs) / \(targets.carbs) g")
+        lines.append("- Fat: \(consumedMacros.fat) / \(targets.fat) g")
+        lines.append("- Sugar: \(consumedMacros.sugar) g")
+
+        return lines.joined(separator: "\n")
     }
 
     private func showMacros(for meal: Meal) {
