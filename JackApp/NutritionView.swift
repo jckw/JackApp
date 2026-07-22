@@ -27,6 +27,7 @@ enum MealSection: String, CaseIterable {
     case breakfast = "Breakfast"
     case snacks = "Snacks"
     case meals = "Meals"
+    case beverages = "Beverages"
 }
 
 struct MacroTargets {
@@ -93,13 +94,11 @@ private let allMeals: [Meal] = [
         )
     ),
 
-    // MARK: - Snacks
-
     Meal(
         id: "lucky_charms_cup",
         emoji: "🌈",
         name: "Cup of dry Lucky Charms",
-        section: .snacks,
+        section: .breakfast,
         macros: Macros(
             calories: 140,
             protein: 3,
@@ -108,6 +107,22 @@ private let allMeals: [Meal] = [
             sugar: 12
         )
     ),
+
+    Meal(
+        id: "pain_au_chocolat",
+        emoji: "🥐",
+        name: "Pain au chocolat",
+        section: .breakfast,
+        macros: Macros(
+            calories: 300,
+            protein: 6,
+            carbs: 30,
+            fat: 17,
+            sugar: 9
+        )
+    ),
+
+    // MARK: - Snacks
 
     Meal(
         id: "barebells_bar",
@@ -148,48 +163,6 @@ private let allMeals: [Meal] = [
             carbs: 17,
             fat: 2,
             sugar: 8
-        )
-    ),
-
-    Meal(
-        id: "flat_white",
-        emoji: "☕️",
-        name: "Flat White (10oz)",
-        section: .snacks,
-        macros: Macros(
-            calories: 180,
-            protein: 9,
-            carbs: 14,
-            fat: 10,
-            sugar: 13
-        )
-    ),
-
-    Meal(
-        id: "gatorade_20oz",
-        emoji: "🥤",
-        name: "Gatorade (20oz)",
-        section: .snacks,
-        macros: Macros(
-            calories: 140,
-            protein: 0,
-            carbs: 36,
-            fat: 0,
-            sugar: 34
-        )
-    ),
-
-    Meal(
-        id: "pain_au_chocolat",
-        emoji: "🥐",
-        name: "Pain au chocolat",
-        section: .snacks,
-        macros: Macros(
-            calories: 300,
-            protein: 6,
-            carbs: 30,
-            fat: 17,
-            sugar: 9
         )
     ),
 
@@ -238,20 +211,6 @@ private let allMeals: [Meal] = [
     ),
 
     Meal(
-        id: "sweetgreen_double_chicken_bowl",
-        emoji: "🥗",
-        name: "Sweetgreen double chicken bowl",
-        section: .meals,
-        macros: Macros(
-            calories: 850,
-            protein: 55,
-            carbs: 65,
-            fat: 35,
-            sugar: 10
-        )
-    ),
-
-    Meal(
         id: "bone_broth_rice_chicken_broccoli",
         emoji: "🍲",
         name: "200g bone broth rice, 180g chicken thigh, broccoli",
@@ -262,6 +221,36 @@ private let allMeals: [Meal] = [
             carbs: 63,
             fat: 20,
             sugar: 3
+        )
+    ),
+
+    // MARK: - Beverages
+
+    Meal(
+        id: "flat_white",
+        emoji: "☕️",
+        name: "Flat White (10oz)",
+        section: .beverages,
+        macros: Macros(
+            calories: 180,
+            protein: 9,
+            carbs: 14,
+            fat: 10,
+            sugar: 13
+        )
+    ),
+
+    Meal(
+        id: "gatorade_20oz",
+        emoji: "🥤",
+        name: "Gatorade (20oz)",
+        section: .beverages,
+        macros: Macros(
+            calories: 140,
+            protein: 0,
+            carbs: 36,
+            fat: 0,
+            sugar: 34
         )
     )
 ]
