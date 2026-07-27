@@ -44,22 +44,44 @@ enum DayType: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    func targets(for mode: NutritionMode) -> MacroTargets {
-        switch mode {
-        case .cut:
-            switch self {
-            case .rest:      return MacroTargets(calories: 1900, protein: 175, carbs: 165, fat: 60)
-            case .training:  return MacroTargets(calories: 2450, protein: 175, carbs: 310, fat: 57)
-            case .endurance: return MacroTargets(calories: 2950, protein: 180, carbs: 420, fat: 61)
-            }
-        case .maintenance:
-            // TDEE estimate via Katch-McArdle (5'11", 27yo male, 170lb, 17% bf) scaled by day-type activity.
-            switch self {
-            case .rest:      return MacroTargets(calories: 2400, protein: 170, carbs: 250, fat: 80)
-            case .training:  return MacroTargets(calories: 2700, protein: 175, carbs: 320, fat: 80)
-            case .endurance: return MacroTargets(calories: 3000, protein: 180, carbs: 390, fat: 80)
-            }
+    /// Activity multiplier applied to BMR to estimate total daily expenditure.
+    /// Rest sits at "lightly active" rather than sedentary because a normal
+    /// rest day still includes ~10k steps of NEAT.
+    var activityFactor: Double {
+        switch self {
+        case .rest:      return 1.375  // lightly active — ~10k steps even with no workout
+        case .training:  return 1.65   // a gym session on top of the daily baseline (~450 kcal)
+        case .endurance: return 1.95   // a long run, or gym + run (~1,000-1,700 kcal)
         }
+    }
+
+    /// Targets computed live from body composition rather than hardcoded.
+    ///
+    /// BMR uses Katch-McArdle (which depends only on lean mass, so it stays
+    /// accurate as body fat changes). Maintenance = BMR × activity factor; a
+    /// cut applies a fixed 500 kcal deficit. Macros are anchored to protein at
+    /// ~1 g/lb bodyweight and 30% of calories from fat, with carbs filling the
+    /// remainder.
+    func targets(for mode: NutritionMode, profile: BodyProfile) -> MacroTargets {
+        let leanMassKg = profile.weightLb * 0.453592 * (1 - profile.bodyFatPercent / 100)
+        let bmr = 370 + 21.6 * leanMassKg
+        let maintenance = bmr * activityFactor
+        let calories = max(1500, maintenance - mode.calorieDeficit)
+
+        let protein = profile.weightLb * 1.0
+        let fatGrams = (calories * 0.30) / 9
+        let carbGrams = max(0, (calories - protein * 4 - fatGrams * 9) / 4)
+
+        func round(to step: Double, _ value: Double) -> Int {
+            Int((value / step).rounded()) * Int(step)
+        }
+
+        return MacroTargets(
+            calories: round(to: 10, calories),
+            protein:  round(to: 5, protein),
+            carbs:    round(to: 5, carbGrams),
+            fat:      round(to: 5, fatGrams)
+        )
     }
 }
 
@@ -279,6 +301,8 @@ private let pizzaMacros = Macros(
 
 struct NutritionView: View {
     @AppStorage(NutritionMode.storageKey) private var nutritionMode: NutritionMode = .default
+    @AppStorage(BodyProfile.weightKey) private var weightLb: Double = BodyProfile.defaultWeightLb
+    @AppStorage(BodyProfile.bodyFatKey) private var bodyFatPercent: Double = BodyProfile.defaultBodyFatPercent
     @State private var dayType: DayType = .rest
     @State private var checkedIDs: Set<String> = []
     @State private var pizzaSlices = 0
@@ -287,7 +311,10 @@ struct NutritionView: View {
     @State private var macrosMeal: Meal?
     @State private var justCopied = false
 
-    private var targets: MacroTargets { dayType.targets(for: nutritionMode) }
+    private var profile: BodyProfile {
+        BodyProfile(weightLb: weightLb, bodyFatPercent: bodyFatPercent)
+    }
+    private var targets: MacroTargets { dayType.targets(for: nutritionMode, profile: profile) }
     private var dailyTarget: Int { targets.calories }
     private var proteinTarget: Int { targets.protein }
 
