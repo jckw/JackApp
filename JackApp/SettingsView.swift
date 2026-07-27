@@ -50,8 +50,13 @@ struct BodyProfile {
     }
 
     /// Resting metabolic rate via Katch-McArdle.
+    var restingEnergy: Double {
+        370 + 21.6 * leanMassKg
+    }
+
+    /// Resting metabolic rate, rounded for display.
     var basalMetabolicRate: Int {
-        Int((370 + 21.6 * leanMassKg).rounded())
+        Int(restingEnergy.rounded())
     }
 }
 
@@ -111,15 +116,21 @@ struct SettingsView: View {
                         + "body changes and every target follows.")
                 }
 
-                Section("Daily Targets") {
+                Section {
                     ForEach(DayType.allCases) { day in
-                        let targets = day.targets(for: nutritionMode, profile: profile)
-                        LabeledContent(day.rawValue) {
-                            Text("\(targets.calories) kcal · P\(targets.protein) C\(targets.carbs) F\(targets.fat)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                        if let maintenance = day.maintenanceCalories(for: profile) {
+                            let targets = MacroTargets.from(maintenance: maintenance, mode: nutritionMode, weightLb: weightLb)
+                            LabeledContent(day.rawValue) {
+                                Text("\(targets.calories) kcal · P\(targets.protein) C\(targets.carbs) F\(targets.fat)")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
+                } header: {
+                    Text("Daily Targets")
+                } footer: {
+                    Text("Custom days use the calories you enter on the Nutrition tab.")
                 }
             }
             .navigationTitle("Settings")

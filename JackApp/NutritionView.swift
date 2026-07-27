@@ -35,40 +35,13 @@ struct MacroTargets {
     let protein: Int
     let carbs: Int
     let fat: Int
-}
 
-enum DayType: String, CaseIterable, Identifiable {
-    case rest = "Rest"
-    case training = "Training"
-    case endurance = "Long run"
-
-    var id: String { rawValue }
-
-    /// Activity multiplier applied to BMR to estimate total daily expenditure.
-    /// Rest sits at "lightly active" rather than sedentary because a normal
-    /// rest day still includes ~10k steps of NEAT.
-    var activityFactor: Double {
-        switch self {
-        case .rest:      return 1.375  // lightly active — ~10k steps even with no workout
-        case .training:  return 1.65   // a gym session on top of the daily baseline (~450 kcal)
-        case .endurance: return 1.95   // a long run, or gym + run (~1,000-1,700 kcal)
-        }
-    }
-
-    /// Targets computed live from body composition rather than hardcoded.
-    ///
-    /// BMR uses Katch-McArdle (which depends only on lean mass, so it stays
-    /// accurate as body fat changes). Maintenance = BMR × activity factor; a
-    /// cut applies a fixed 500 kcal deficit. Macros are anchored to protein at
-    /// ~1 g/lb bodyweight and 30% of calories from fat, with carbs filling the
-    /// remainder.
-    func targets(for mode: NutritionMode, profile: BodyProfile) -> MacroTargets {
-        let leanMassKg = profile.weightLb * 0.453592 * (1 - profile.bodyFatPercent / 100)
-        let bmr = 370 + 21.6 * leanMassKg
-        let maintenance = bmr * activityFactor
+    /// Builds targets from a day's total maintenance expenditure. Applies the
+    /// mode's deficit, then anchors protein to ~1 g/lb bodyweight and 30% of
+    /// calories to fat, with carbs filling the remainder.
+    static func from(maintenance: Double, mode: NutritionMode, weightLb: Double) -> MacroTargets {
         let calories = max(1500, maintenance - mode.calorieDeficit)
-
-        let protein = profile.weightLb * 1.0
+        let protein = weightLb * 1.0
         let fatGrams = (calories * 0.30) / 9
         let carbGrams = max(0, (calories - protein * 4 - fatGrams * 9) / 4)
 
@@ -82,6 +55,36 @@ enum DayType: String, CaseIterable, Identifiable {
             carbs:    round(to: 5, carbGrams),
             fat:      round(to: 5, fatGrams)
         )
+    }
+}
+
+enum DayType: String, CaseIterable, Identifiable {
+    case rest = "Rest"
+    case training = "Training"
+    case endurance = "Long run"
+    case custom = "Custom"
+
+    var id: String { rawValue }
+
+    /// Activity multiplier applied to BMR to estimate total daily expenditure.
+    /// Rest sits at "lightly active" rather than sedentary because a normal
+    /// rest day still includes ~10k steps of NEAT. `nil` for custom, where the
+    /// user supplies the day's total burn directly.
+    var activityFactor: Double? {
+        switch self {
+        case .rest:      return 1.375  // lightly active — ~10k steps even with no workout
+        case .training:  return 1.65   // a gym session on top of the daily baseline (~450 kcal)
+        case .endurance: return 1.95   // a long run, or gym + run (~1,000-1,700 kcal)
+        case .custom:    return nil    // user enters the day's total burn from their watch
+        }
+    }
+
+    /// Estimated total daily expenditure for a fixed-factor day, from BMR
+    /// (Katch-McArdle) scaled by activity. Returns nil for custom, which needs
+    /// a user-entered burn instead.
+    func maintenanceCalories(for profile: BodyProfile) -> Double? {
+        guard let activityFactor else { return nil }
+        return profile.restingEnergy * activityFactor
     }
 }
 
@@ -303,6 +306,7 @@ struct NutritionView: View {
     @AppStorage(NutritionMode.storageKey) private var nutritionMode: NutritionMode = .default
     @AppStorage(BodyProfile.weightKey) private var weightLb: Double = BodyProfile.defaultWeightLb
     @AppStorage(BodyProfile.bodyFatKey) private var bodyFatPercent: Double = BodyProfile.defaultBodyFatPercent
+    @AppStorage("customDailyBurn") private var customBurn: Double = 2500
     @State private var dayType: DayType = .rest
     @State private var checkedIDs: Set<String> = []
     @State private var pizzaSlices = 0
@@ -314,7 +318,10 @@ struct NutritionView: View {
     private var profile: BodyProfile {
         BodyProfile(weightLb: weightLb, bodyFatPercent: bodyFatPercent)
     }
-    private var targets: MacroTargets { dayType.targets(for: nutritionMode, profile: profile) }
+    private var targets: MacroTargets {
+        let maintenance = dayType.maintenanceCalories(for: profile) ?? customBurn
+        return MacroTargets.from(maintenance: maintenance, mode: nutritionMode, weightLb: weightLb)
+    }
     private var dailyTarget: Int { targets.calories }
     private var proteinTarget: Int { targets.protein }
 
@@ -345,6 +352,24 @@ struct NutritionView: View {
                         }
                     }
                     .pickerStyle(.segmented)
+                }
+
+                if dayType == .custom {
+                    Section {
+                        HStack {
+                            Text("🔥")
+                            Text("Burned today")
+                            Spacer()
+                            TextField("kcal", value: $customBurn, format: .number)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                            Text("kcal").foregroundStyle(.secondary)
+                        }
+                    } footer: {
+                        Text(nutritionMode == .cut
+                            ? "Enter the total calories your watch reports for the day. Your target is that minus a 500 kcal deficit."
+                            : "Enter the total calories your watch reports for the day. Your target matches it to maintain.")
+                    }
                 }
 
                 Section {
