@@ -252,6 +252,20 @@ private let allMeals: [Meal] = [
             fat: 0,
             sugar: 34
         )
+    ),
+
+    Meal(
+        id: "fairlife_core_power_42g",
+        emoji: "🥛",
+        name: "Fairlife Core Power Elite (42g)",
+        section: .beverages,
+        macros: Macros(
+            calories: 230,
+            protein: 42,
+            carbs: 7,
+            fat: 4,
+            sugar: 5
+        )
     )
 ]
 
