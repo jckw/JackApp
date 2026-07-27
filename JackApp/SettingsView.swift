@@ -65,6 +65,8 @@ struct SettingsView: View {
     @AppStorage(BodyProfile.weightKey) private var weightLb: Double = BodyProfile.defaultWeightLb
     @AppStorage(BodyProfile.bodyFatKey) private var bodyFatPercent: Double = BodyProfile.defaultBodyFatPercent
 
+    @FocusState private var isFieldFocused: Bool
+
     private var profile: BodyProfile {
         BodyProfile(weightLb: weightLb, bodyFatPercent: bodyFatPercent)
     }
@@ -93,6 +95,7 @@ struct SettingsView: View {
                             TextField("Weight", value: $weightLb, format: .number)
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
+                                .focused($isFieldFocused)
                             Text("lb").foregroundStyle(.secondary)
                         }
                     }
@@ -102,6 +105,7 @@ struct SettingsView: View {
                             TextField("Body Fat", value: $bodyFatPercent, format: .number)
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
+                                .focused($isFieldFocused)
                             Text("%").foregroundStyle(.secondary)
                         }
                     }
@@ -134,6 +138,14 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        isFieldFocused = false
+                    }
+                }
+            }
         }
     }
 }
