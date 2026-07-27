@@ -49,8 +49,8 @@ enum DayType: String, CaseIterable, Identifiable {
     var activityFactor: Double {
         switch self {
         case .rest:      return 1.375  // lightly active — ~10k steps even with no workout
-        case .training:  return 1.55   // moderately active — a lifting session on top
-        case .endurance: return 1.725  // very active — long run
+        case .training:  return 1.65   // a gym session on top of the daily baseline (~450 kcal)
+        case .endurance: return 1.95   // a long run, or gym + run (~1,000-1,700 kcal)
         }
     }
 
