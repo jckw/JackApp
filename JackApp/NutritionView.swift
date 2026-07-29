@@ -306,7 +306,7 @@ struct NutritionView: View {
     @AppStorage(NutritionMode.storageKey) private var nutritionMode: NutritionMode = .default
     @AppStorage(BodyProfile.weightKey) private var weightLb: Double = BodyProfile.defaultWeightLb
     @AppStorage(BodyProfile.bodyFatKey) private var bodyFatPercent: Double = BodyProfile.defaultBodyFatPercent
-    @AppStorage("customDailyBurn") private var customBurn: Double = 2500
+    @AppStorage("customActiveCalories") private var customActiveCalories: Double = 500
     @State private var dayType: DayType = .rest
     @State private var checkedIDs: Set<String> = []
     @State private var pizzaSlices = 0
@@ -319,7 +319,7 @@ struct NutritionView: View {
         BodyProfile(weightLb: weightLb, bodyFatPercent: bodyFatPercent)
     }
     private var targets: MacroTargets {
-        let maintenance = dayType.maintenanceCalories(for: profile) ?? customBurn
+        let maintenance = dayType.maintenanceCalories(for: profile) ?? (profile.restingEnergy + customActiveCalories)
         return MacroTargets.from(maintenance: maintenance, mode: nutritionMode, weightLb: weightLb)
     }
     private var dailyTarget: Int { targets.calories }
@@ -358,17 +358,18 @@ struct NutritionView: View {
                     Section {
                         HStack {
                             Text("🔥")
-                            Text("Burned today")
+                            Text("Active calories")
                             Spacer()
-                            TextField("kcal", value: $customBurn, format: .number)
+                            TextField("kcal", value: $customActiveCalories, format: .number)
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
                             Text("kcal").foregroundStyle(.secondary)
                         }
                     } footer: {
-                        Text(nutritionMode == .cut
-                            ? "Enter the total calories your watch reports for the day. Your target is that minus a 500 kcal deficit."
-                            : "Enter the total calories your watch reports for the day. Your target matches it to maintain.")
+                        Text("Enter the active calories your watch reports (the move ring, not "
+                            + "the total). Your \(profile.basalMetabolicRate) kcal resting "
+                            + "metabolism is added automatically to get the day's total burn"
+                            + (nutritionMode == .cut ? ", then a 500 kcal deficit for your target." : "."))
                     }
                 }
 
