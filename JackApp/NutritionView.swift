@@ -139,11 +139,11 @@ private let allMeals: [Meal] = [
         name: "Pain au chocolat",
         section: .breakfast,
         macros: Macros(
-            calories: 300,
-            protein: 6,
-            carbs: 30,
-            fat: 17,
-            sugar: 9
+            calories: 400,
+            protein: 7,
+            carbs: 38,
+            fat: 23,
+            sugar: 13
         )
     ),
 
