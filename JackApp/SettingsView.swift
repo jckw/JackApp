@@ -134,7 +134,8 @@ struct SettingsView: View {
                 } header: {
                     Text("Daily Targets")
                 } footer: {
-                    Text("Custom days use the calories you enter on the Nutrition tab.")
+                    Text("Custom days add the active calories you enter on the Nutrition tab "
+                        + "to your resting metabolism.")
                 }
             }
             .navigationTitle("Settings")
