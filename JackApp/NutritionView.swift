@@ -302,12 +302,22 @@ private let pizzaMacros = Macros(
     sugar: 4
 )
 
+/// Progress of pulling Active Energy Burned from Apple Health into a custom day.
+private enum HealthSyncState: Equatable {
+    case unavailable   // HealthKit not present on this device
+    case idle          // nothing pulled yet this appearance
+    case syncing       // authorization prompt / query in flight
+    case synced        // populated from Health
+    case noData        // authorized (or declined) but Health reported 0 kcal
+}
+
 struct NutritionView: View {
     @AppStorage(NutritionMode.storageKey) private var nutritionMode: NutritionMode = .default
     @AppStorage(BodyProfile.weightKey) private var weightLb: Double = BodyProfile.defaultWeightLb
     @AppStorage(BodyProfile.bodyFatKey) private var bodyFatPercent: Double = BodyProfile.defaultBodyFatPercent
     @AppStorage("customActiveCalories") private var customActiveCalories: Double = 500
     @State private var dayType: DayType = .rest
+    @State private var healthSync: HealthSyncState = .idle
     @State private var checkedIDs: Set<String> = []
     @State private var pizzaSlices = 0
     @State private var lunchDinnerSplit: Double = 0.6
@@ -342,6 +352,23 @@ struct NutritionView: View {
     private var lunchBudget: Int { Int(Double(remainingForMeals) * lunchDinnerSplit) }
     private var dinnerBudget: Int { remainingForMeals - lunchBudget }
 
+    private var customFooterText: String {
+        let base = "The active calories your watch reports (the move ring, not the "
+            + "total). Your \(profile.basalMetabolicRate) kcal resting metabolism is "
+            + "added automatically to get the day's total burn"
+            + (nutritionMode == .cut ? ", then a 500 kcal deficit for your target." : ".")
+        switch healthSync {
+        case .synced:
+            return base + " Pulled from Apple Health — tap to refresh or edit by hand."
+        case .noData:
+            return base + " Apple Health had no active calories yet today, so enter them by hand."
+        case .unavailable:
+            return base
+        case .idle, .syncing:
+            return base + " Syncs from Apple Health, or enter them by hand."
+        }
+    }
+
     var body: some View {
         NavigationStack {
             List {
@@ -365,11 +392,31 @@ struct NutritionView: View {
                                 .multilineTextAlignment(.trailing)
                             Text("kcal").foregroundStyle(.secondary)
                         }
+
+                        if healthSync != .unavailable {
+                            Button {
+                                Task { await syncActiveCalories() }
+                            } label: {
+                                HStack {
+                                    if healthSync == .syncing {
+                                        ProgressView()
+                                        Text("Syncing…")
+                                    } else {
+                                        Image(systemName: "arrow.clockwise")
+                                        Text(healthSync == .synced
+                                            ? "Synced from Apple Health"
+                                            : "Sync from Apple Health")
+                                    }
+                                    Spacer()
+                                }
+                            }
+                            .disabled(healthSync == .syncing)
+                        }
                     } footer: {
-                        Text("Enter the active calories your watch reports (the move ring, not "
-                            + "the total). Your \(profile.basalMetabolicRate) kcal resting "
-                            + "metabolism is added automatically to get the day's total burn"
-                            + (nutritionMode == .cut ? ", then a 500 kcal deficit for your target." : "."))
+                        Text(customFooterText)
+                    }
+                    .task {
+                        await syncActiveCalories()
                     }
                 }
 
@@ -541,6 +588,32 @@ struct NutritionView: View {
                     """
                 )
             }
+        }
+    }
+
+    /// Pulls today's Active Energy Burned from Apple Health into the custom-day
+    /// figure. Requests read access on first use, rounds to the nearest 10 kcal
+    /// for a tidy number, and leaves the existing value untouched when Health
+    /// reports 0 — which covers both "no data yet" and a declined prompt, so a
+    /// manually typed figure is never clobbered by a zero.
+    private func syncActiveCalories() async {
+        let health = HealthKitManager.shared
+        guard health.isAvailable else {
+            healthSync = .unavailable
+            return
+        }
+        healthSync = .syncing
+        do {
+            try await health.requestAuthorization()
+            let kcal = try await health.todayActiveEnergy()
+            if kcal > 0 {
+                customActiveCalories = (kcal / 10).rounded() * 10
+                healthSync = .synced
+            } else {
+                healthSync = .noData
+            }
+        } catch {
+            healthSync = .idle
         }
     }
 
