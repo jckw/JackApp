@@ -261,6 +261,7 @@
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is needed to take progress photos.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID is used to protect your private progress photos.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Active calories from Apple Health pre-fill your custom nutrition day's energy burn.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "JackApp only reads Active Energy from Apple Health and never writes any data back.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -298,6 +299,7 @@
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is needed to take progress photos.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID is used to protect your private progress photos.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Active calories from Apple Health pre-fill your custom nutrition day's energy burn.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "JackApp only reads Active Energy from Apple Health and never writes any data back.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
