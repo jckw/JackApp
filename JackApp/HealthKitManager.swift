@@ -12,7 +12,7 @@ import HealthKit
 /// days can be pre-filled from the watch's move ring instead of typed in by
 /// hand. Read-only — the app never writes back to Health.
 @MainActor
-final class HealthKitManager: ObservableObject {
+final class HealthKitManager {
     static let shared = HealthKitManager()
 
     private let store = HKHealthStore()
