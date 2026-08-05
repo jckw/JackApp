@@ -11,12 +11,23 @@ enum PaceUnit: String, CaseIterable, Identifiable {
     case km = "/km"
     case mile = "/mile"
 
+    static let storageKey = "paceUnit"
+    static let `default`: PaceUnit = .km
+
     var id: String { rawValue }
 
     var distanceLabel: String {
         switch self {
         case .km:   return "kilometre"
         case .mile: return "mile"
+        }
+    }
+
+    /// How this pace preference reads in the settings picker.
+    var systemName: String {
+        switch self {
+        case .km:   return "Metric (km)"
+        case .mile: return "Imperial (miles)"
         }
     }
 }
@@ -27,7 +38,7 @@ struct RunningView: View {
     /// The pace the user is entering, expressed in the currently selected unit.
     @State private var minutes = 5
     @State private var seconds = 0
-    @State private var unit: PaceUnit = .km
+    @AppStorage(PaceUnit.storageKey) private var unit: PaceUnit = .default
 
     // MARK: - Derived values
 

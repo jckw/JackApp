@@ -20,6 +20,7 @@ private struct ExerciseSummary: Identifiable {
 }
 
 struct WorkoutsView: View {
+    @AppStorage(WeightUnit.storageKey) private var weightUnit: WeightUnit = .default
     @Query(sort: \LiftEntry.date, order: .reverse) private var entries: [LiftEntry]
     @State private var showingLog = false
 
@@ -70,7 +71,7 @@ struct WorkoutsView: View {
                 NavigationLink {
                     ExerciseHistoryView(exerciseName: summary.name)
                 } label: {
-                    ExerciseSummaryRow(summary: summary)
+                    ExerciseSummaryRow(summary: summary, weightUnit: weightUnit)
                 }
             }
         }
@@ -115,6 +116,7 @@ struct WorkoutsView: View {
 
 private struct ExerciseSummaryRow: View {
     let summary: ExerciseSummary
+    let weightUnit: WeightUnit
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -130,11 +132,11 @@ private struct ExerciseSummaryRow: View {
             HStack(spacing: 16) {
                 StatBadge(
                     label: "Best est. 1RM",
-                    value: LiftFormat.weight(summary.bestOneRepMax)
+                    value: LiftFormat.weight(summary.bestOneRepMax, in: weightUnit)
                 )
                 StatBadge(
                     label: "Heaviest",
-                    value: LiftFormat.weight(summary.topWeight)
+                    value: LiftFormat.weight(summary.topWeight, in: weightUnit)
                 )
                 Spacer()
                 Text("\(summary.sessionCount) \(summary.sessionCount == 1 ? "session" : "sessions")")
