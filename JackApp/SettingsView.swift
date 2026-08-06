@@ -64,11 +64,22 @@ struct SettingsView: View {
     @AppStorage(NutritionMode.storageKey) private var nutritionMode: NutritionMode = .default
     @AppStorage(BodyProfile.weightKey) private var weightLb: Double = BodyProfile.defaultWeightLb
     @AppStorage(BodyProfile.bodyFatKey) private var bodyFatPercent: Double = BodyProfile.defaultBodyFatPercent
+    @AppStorage(WeightUnit.storageKey) private var weightUnit: WeightUnit = .default
+    @AppStorage(PaceUnit.storageKey) private var paceUnit: PaceUnit = .default
 
     @FocusState private var isFieldFocused: Bool
 
     private var profile: BodyProfile {
         BodyProfile(weightLb: weightLb, bodyFatPercent: bodyFatPercent)
+    }
+
+    /// Body weight in the chosen unit, converting to/from canonical pounds so the
+    /// stored value (and every calorie target derived from it) is unchanged.
+    private var displayWeight: Binding<Double> {
+        Binding(
+            get: { weightUnit.value(fromPounds: weightLb) },
+            set: { weightLb = weightUnit.pounds(from: $0) }
+        )
     }
 
     var body: some View {
@@ -90,13 +101,49 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Lifts")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Picker("Lifts", selection: $weightUnit) {
+                            ForEach(WeightUnit.allCases) { unit in
+                                Text(unit.displayName).tag(unit)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                    }
+                    .padding(.vertical, 2)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Running")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Picker("Running", selection: $paceUnit) {
+                            ForEach(PaceUnit.allCases) { unit in
+                                Text(unit.systemName).tag(unit)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                    }
+                    .padding(.vertical, 2)
+                } header: {
+                    Text("Units")
+                } footer: {
+                    Text("Choose units independently for lifts and for running. "
+                        + "Switching re-expresses your existing data — nothing is "
+                        + "re-entered, so your logs read the same in either system.")
+                }
+
+                Section {
                     LabeledContent("Weight") {
                         HStack(spacing: 4) {
-                            TextField("Weight", value: $weightLb, format: .number)
+                            TextField("Weight", value: displayWeight, format: .number)
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
                                 .focused($isFieldFocused)
-                            Text("lb").foregroundStyle(.secondary)
+                            Text(weightUnit.abbreviation).foregroundStyle(.secondary)
                         }
                     }
 

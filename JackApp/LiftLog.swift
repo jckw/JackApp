@@ -91,12 +91,18 @@ enum CoreMovement {
 // MARK: - Formatting
 
 enum LiftFormat {
-    /// Formats a weight in kilograms, dropping a trailing ".0".
-    static func weight(_ value: Double) -> String {
+    /// Formats a canonical kilogram weight in the given unit, dropping a
+    /// trailing ".0".
+    static func weight(_ kilograms: Double, in unit: WeightUnit) -> String {
+        formatted(unit.value(fromKilograms: kilograms), in: unit)
+    }
+
+    /// Formats a value already expressed in `unit`, dropping a trailing ".0".
+    static func formatted(_ value: Double, in unit: WeightUnit) -> String {
         let rounded = (value * 10).rounded() / 10
         if rounded == rounded.rounded() {
-            return "\(Int(rounded)) kg"
+            return "\(Int(rounded)) \(unit.abbreviation)"
         }
-        return String(format: "%.1f kg", rounded)
+        return String(format: "%.1f %@", rounded, unit.abbreviation)
     }
 }

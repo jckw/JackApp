@@ -10,6 +10,7 @@ import SwiftUI
 
 struct ExerciseHistoryView: View {
     @Environment(\.modelContext) private var modelContext
+    @AppStorage(WeightUnit.storageKey) private var weightUnit: WeightUnit = .default
 
     let exerciseName: String
     @Query private var entries: [LiftEntry]
@@ -43,12 +44,12 @@ struct ExerciseHistoryView: View {
             if !entries.isEmpty {
                 Section("Personal Bests") {
                     HStack(spacing: 12) {
-                        PBCard(title: "Est. 1RM", value: LiftFormat.weight(bestOneRepMax))
-                        PBCard(title: "Heaviest", value: LiftFormat.weight(heaviestWeight))
+                        PBCard(title: "Est. 1RM", value: LiftFormat.weight(bestOneRepMax, in: weightUnit))
+                        PBCard(title: "Heaviest", value: LiftFormat.weight(heaviestWeight, in: weightUnit))
                         if let bestSet {
                             PBCard(
                                 title: "Best Set",
-                                value: "\(LiftFormat.weight(bestSet.weight)) × \(bestSet.reps)"
+                                value: "\(LiftFormat.weight(bestSet.weight, in: weightUnit)) × \(bestSet.reps)"
                             )
                         }
                     }
@@ -58,7 +59,11 @@ struct ExerciseHistoryView: View {
 
             Section("History") {
                 ForEach(entries) { entry in
-                    SessionRow(entry: entry, isTopWeight: entry.topSetWeight == heaviestWeight && heaviestWeight > 0)
+                    SessionRow(
+                        entry: entry,
+                        isTopWeight: entry.topSetWeight == heaviestWeight && heaviestWeight > 0,
+                        weightUnit: weightUnit
+                    )
                 }
                 .onDelete(perform: deleteEntries)
             }
@@ -115,6 +120,7 @@ private struct PBCard: View {
 private struct SessionRow: View {
     let entry: LiftEntry
     let isTopWeight: Bool
+    let weightUnit: WeightUnit
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -128,14 +134,14 @@ private struct SessionRow: View {
                         .foregroundStyle(.yellow)
                 }
                 Spacer()
-                Text("est. 1RM \(LiftFormat.weight(entry.bestOneRepMax))")
+                Text("est. 1RM \(LiftFormat.weight(entry.bestOneRepMax, in: weightUnit))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             ForEach(entry.orderedSets) { set in
                 HStack {
-                    Text("\(LiftFormat.weight(set.weight)) × \(set.reps)")
+                    Text("\(LiftFormat.weight(set.weight, in: weightUnit)) × \(set.reps)")
                         .font(.subheadline)
                         .monospacedDigit()
                     Spacer()

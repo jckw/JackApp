@@ -21,6 +21,7 @@ private struct SetDraft: Identifiable {
 struct LogLiftView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @AppStorage(WeightUnit.storageKey) private var weightUnit: WeightUnit = .default
 
     /// When presented from an exercise's history, its name is pre-filled and locked.
     var prefilledExercise: String?
@@ -112,7 +113,7 @@ struct LogLiftView: View {
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
                                 .frame(maxWidth: .infinity)
-                            Text("kg")
+                            Text(weightUnit.abbreviation)
                                 .foregroundStyle(.secondary)
 
                             Text("×")
@@ -146,7 +147,7 @@ struct LogLiftView: View {
                     Text("Sets")
                 } footer: {
                     if bestOneRepMax > 0 {
-                        Text("Estimated 1RM this session: \(LiftFormat.weight(bestOneRepMax))")
+                        Text("Estimated 1RM this session: \(LiftFormat.formatted(bestOneRepMax, in: weightUnit))")
                     }
                 }
             }
@@ -174,7 +175,8 @@ struct LogLiftView: View {
 
         var order = 0
         for draft in sets where draft.isValid {
-            let set = LiftSet(weight: draft.weight, reps: draft.reps, order: order)
+            // Drafts are entered in the user's chosen unit; store canonical kg.
+            let set = LiftSet(weight: weightUnit.kilograms(from: draft.weight), reps: draft.reps, order: order)
             modelContext.insert(set)
             // Setting the inverse updates entry.sets automatically.
             set.entry = entry
