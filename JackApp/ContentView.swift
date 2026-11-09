@@ -25,6 +25,11 @@ struct ContentView: View {
                     Label("Running", systemImage: "figure.run")
                 }
 
+            AirView()
+                .tabItem {
+                    Label("Air", systemImage: "thermometer.medium")
+                }
+
             SettingsView()
                 .tabItem {
                     Label("Settings", systemImage: "gearshape")
