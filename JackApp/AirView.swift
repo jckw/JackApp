@@ -157,8 +157,8 @@ struct AirView: View {
     @State private var errorMessage: String?
     @State private var range: AirRange = .day
     @State private var showingSettings = false
-    /// Raw x-position under the finger while scrubbing the temperature chart.
-    @State private var temperatureSelection: Date?
+    /// Raw x-position under the finger while scrubbing any of the charts.
+    @State private var scrubSelection: Date?
 
     var body: some View {
         NavigationStack {
@@ -215,9 +215,15 @@ struct AirView: View {
                         ForEach(AirRange.allCases) { Text($0.label).tag($0) }
                     }
                     .pickerStyle(.segmented)
-                    temperatureChart(snapshot.readings)
-                    humidityChart(snapshot.readings)
-                    co2Chart(snapshot.readings)
+                    let readings = snapshot.readings
+                    let selected = nearestReading(to: scrubSelection, in: readings)
+                    // Haptics on one chart only, so a step doesn't buzz three times.
+                    metricChart("Temperature", readings: readings, selected: selected, color: .orange,
+                                height: 180, unit: "°C", fractionDigits: 1, haptics: true) { $0.temperature }
+                    metricChart("Humidity", readings: readings, selected: selected, color: .blue,
+                                height: 140, unit: "%") { Double($0.humidity) }
+                    metricChart("CO₂", readings: readings, selected: selected, color: .teal,
+                                height: 140, unit: "ppm", limit: 1000) { Double($0.co2) }
                 }
             }
 
@@ -306,20 +312,31 @@ struct AirView: View {
             : .dateTime.weekday(.abbreviated).hour().minute()
     }
 
-    private func temperatureChart(_ readings: [AirReading]) -> some View {
-        let selected = nearestReading(to: temperatureSelection, in: readings)
-
-        return VStack(alignment: .leading, spacing: 6) {
+    /// One scrubbable chart. All charts share `scrubSelection`, so scrubbing any of them
+    /// highlights the same moment on every chart.
+    private func metricChart(
+        _ title: String,
+        readings: [AirReading],
+        selected: AirReading?,
+        color: Color,
+        height: CGFloat,
+        unit: String,
+        fractionDigits: Int = 0,
+        limit: Double? = nil,
+        haptics: Bool = false,
+        value: @escaping (AirReading) -> Double
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
             // The header doubles as the scrub readout, so nothing gets clipped at the chart edges.
             HStack(alignment: .firstTextBaseline) {
-                Text("Temperature")
+                Text(title)
                     .font(.subheadline)
                 Spacer()
                 if let selected {
-                    Text("\(selected.temperature, format: .number.precision(.fractionLength(1))) °C")
+                    Text("\(value(selected), format: .number.precision(.fractionLength(fractionDigits))) \(unit)")
                         .font(.subheadline.weight(.semibold))
                         .monospacedDigit()
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(color)
                     Text(selected.date, format: selectionTimeFormat)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -327,58 +344,28 @@ struct AirView: View {
             }
             Chart {
                 ForEach(readings) {
-                    LineMark(x: .value("Time", $0.date), y: .value("°C", $0.temperature))
+                    LineMark(x: .value("Time", $0.date), y: .value(unit, value($0)))
                         .interpolationMethod(.linear)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(color)
+                }
+                if let limit {
+                    RuleMark(y: .value("Limit", limit))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                        .foregroundStyle(.secondary)
                 }
                 if let selected {
                     RuleMark(x: .value("Selected", selected.date))
                         .lineStyle(StrokeStyle(lineWidth: 1))
                         .foregroundStyle(.secondary)
-                    PointMark(x: .value("Time", selected.date), y: .value("°C", selected.temperature))
+                    PointMark(x: .value("Time", selected.date), y: .value(unit, value(selected)))
                         .symbolSize(60)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(color)
                 }
             }
             .chartYScale(domain: .automatic(includesZero: false))
-            .chartXSelection(value: $temperatureSelection)
-            .sensoryFeedback(.selection, trigger: selected?.id)
-            .frame(height: 180)
-        }
-        .padding(.vertical, 4)
-    }
-
-    private func humidityChart(_ readings: [AirReading]) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Humidity")
-                .font(.subheadline)
-            Chart(readings) {
-                LineMark(x: .value("Time", $0.date), y: .value("%", $0.humidity))
-                    .interpolationMethod(.linear)
-                    .foregroundStyle(.blue)
-            }
-            .chartYScale(domain: .automatic(includesZero: false))
-            .frame(height: 140)
-        }
-        .padding(.vertical, 4)
-    }
-
-    private func co2Chart(_ readings: [AirReading]) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("CO₂")
-                .font(.subheadline)
-            Chart {
-                ForEach(readings) {
-                    LineMark(x: .value("Time", $0.date), y: .value("ppm", $0.co2))
-                        .interpolationMethod(.linear)
-                        .foregroundStyle(.teal)
-                }
-                RuleMark(y: .value("Limit", 1000))
-                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                    .foregroundStyle(.secondary)
-            }
-            .chartYScale(domain: .automatic(includesZero: false))
-            .frame(height: 140)
+            .chartXSelection(value: $scrubSelection)
+            .sensoryFeedback(.selection, trigger: haptics ? selected?.id : nil)
+            .frame(height: height)
         }
         .padding(.vertical, 4)
     }
