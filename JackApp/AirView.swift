@@ -157,6 +157,8 @@ struct AirView: View {
     @State private var errorMessage: String?
     @State private var range: AirRange = .day
     @State private var showingSettings = false
+    /// Raw x-position under the finger while scrubbing the temperature chart.
+    @State private var temperatureSelection: Date?
 
     var body: some View {
         NavigationStack {
@@ -214,6 +216,7 @@ struct AirView: View {
                     }
                     .pickerStyle(.segmented)
                     temperatureChart(snapshot.readings)
+                    humidityChart(snapshot.readings)
                     co2Chart(snapshot.readings)
                 }
             }
@@ -290,17 +293,72 @@ struct AirView: View {
         }
     }
 
+    /// The reading closest in time to `date`, so the scrubber snaps to real samples.
+    private func nearestReading(to date: Date?, in readings: [AirReading]) -> AirReading? {
+        guard let date else { return nil }
+        let t = date.timeIntervalSince1970
+        return readings.min { abs($0.ts - t) < abs($1.ts - t) }
+    }
+
+    private var selectionTimeFormat: Date.FormatStyle {
+        range == .day
+            ? .dateTime.hour().minute()
+            : .dateTime.weekday(.abbreviated).hour().minute()
+    }
+
     private func temperatureChart(_ readings: [AirReading]) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Temperature")
-                .font(.subheadline)
-            Chart(readings) {
-                LineMark(x: .value("Time", $0.date), y: .value("°C", $0.temperature))
-                    .interpolationMethod(.linear)
-                    .foregroundStyle(.orange)
+        let selected = nearestReading(to: temperatureSelection, in: readings)
+
+        return VStack(alignment: .leading, spacing: 6) {
+            // The header doubles as the scrub readout, so nothing gets clipped at the chart edges.
+            HStack(alignment: .firstTextBaseline) {
+                Text("Temperature")
+                    .font(.subheadline)
+                Spacer()
+                if let selected {
+                    Text("\(selected.temperature, format: .number.precision(.fractionLength(1))) °C")
+                        .font(.subheadline.weight(.semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(.orange)
+                    Text(selected.date, format: selectionTimeFormat)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Chart {
+                ForEach(readings) {
+                    LineMark(x: .value("Time", $0.date), y: .value("°C", $0.temperature))
+                        .interpolationMethod(.linear)
+                        .foregroundStyle(.orange)
+                }
+                if let selected {
+                    RuleMark(x: .value("Selected", selected.date))
+                        .lineStyle(StrokeStyle(lineWidth: 1))
+                        .foregroundStyle(.secondary)
+                    PointMark(x: .value("Time", selected.date), y: .value("°C", selected.temperature))
+                        .symbolSize(60)
+                        .foregroundStyle(.orange)
+                }
             }
             .chartYScale(domain: .automatic(includesZero: false))
+            .chartXSelection(value: $temperatureSelection)
+            .sensoryFeedback(.selection, trigger: selected?.id)
             .frame(height: 180)
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func humidityChart(_ readings: [AirReading]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Humidity")
+                .font(.subheadline)
+            Chart(readings) {
+                LineMark(x: .value("Time", $0.date), y: .value("%", $0.humidity))
+                    .interpolationMethod(.linear)
+                    .foregroundStyle(.blue)
+            }
+            .chartYScale(domain: .automatic(includesZero: false))
+            .frame(height: 140)
         }
         .padding(.vertical, 4)
     }
