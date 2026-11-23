@@ -2,7 +2,8 @@
 //  AirView.swift
 //  JackApp
 //
-//  Live readings from the Aranet4 at home, relayed by an ESP32 to a Cloudflare Worker.
+//  Live readings from the Aranet4 at home, relayed by an ESP32 to a Cloudflare Worker,
+//  plus the heater's power draw from a Shelly plug that posts to the same Worker.
 //  The read token is entered once in the app and kept in the Keychain, never in source.
 //
 
@@ -23,6 +24,27 @@ struct AirReading: Decodable, Identifiable {
     var date: Date { Date(timeIntervalSince1970: ts) }
 }
 
+struct PowerSample: Decodable, Identifiable {
+    let ts: TimeInterval
+    let watts: Double
+
+    var id: TimeInterval { ts }
+    var date: Date { Date(timeIntervalSince1970: ts) }
+}
+
+struct PowerSnapshot: Decodable {
+    struct Latest: Decodable {
+        let ts: TimeInterval
+        let watts: Double
+        let on: Bool
+    }
+
+    let latest: Latest
+    /// Energy used over the selected range.
+    let energyWh: Double
+    let readings: [PowerSample]
+}
+
 struct AirSnapshot: Decodable {
     struct Bridge: Decodable {
         let lastSeen: TimeInterval
@@ -33,6 +55,7 @@ struct AirSnapshot: Decodable {
     let battery: Int?
     let bridge: Bridge?
     let readings: [AirReading]
+    let power: PowerSnapshot?
 }
 
 enum AirRange: Int, CaseIterable, Identifiable {
@@ -146,8 +169,12 @@ private enum CO2Level {
     }
 }
 
-/// The bridge posts a heartbeat every minute; after 10 minutes of silence call it offline.
+/// The bridge and the plug each post every minute; after 10 minutes of silence call them offline.
 private let bridgeOfflineAfter: TimeInterval = 10 * 60
+
+private func isOnline(_ lastSeen: TimeInterval) -> Bool {
+    Date().timeIntervalSince1970 - lastSeen < bridgeOfflineAfter
+}
 
 // MARK: - Views
 
@@ -227,9 +254,21 @@ struct AirView: View {
                 }
             }
 
+            if let power = snapshot?.power {
+                Section("Heater") {
+                    heaterSummary(power)
+                    if !power.readings.isEmpty {
+                        powerChart(power.readings, alignedWith: snapshot?.readings ?? [])
+                    }
+                }
+            }
+
             if let snapshot {
                 Section("Sensor") {
                     bridgeRow(snapshot.bridge)
+                    if let power = snapshot.power {
+                        statusRow("Heater plug", lastSeen: power.latest.ts)
+                    }
                     if let battery = snapshot.battery {
                         LabeledContent("Battery", value: "\(battery)%")
                     }
@@ -370,25 +409,89 @@ struct AirView: View {
         .padding(.vertical, 4)
     }
 
+    private func heaterSummary(_ power: PowerSnapshot) -> some View {
+        let online = isOnline(power.latest.ts)
+        return HStack(alignment: .firstTextBaseline, spacing: 24) {
+            metric(
+                "Now",
+                online ? power.latest.watts.formatted(.number.precision(.fractionLength(0))) : "–",
+                "W",
+                color: online && power.latest.watts >= 5 ? .orange : nil
+            )
+            metric("Used, \(range.label)", (power.energyWh / 1000).formatted(.number.precision(.fractionLength(2))), "kWh")
+            if !power.latest.on {
+                metric("Plug", "Off", "")
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    /// Heater draw, on the same time axis as the air charts and joined to the shared scrubber,
+    /// so heater cycles line up with the temperature they cause.
+    private func powerChart(_ readings: [PowerSample], alignedWith air: [AirReading]) -> some View {
+        let selected = scrubSelection.flatMap { date in
+            readings.min { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) }
+        }
+        let dates = (air.map(\.date) + readings.map(\.date))
+        let domain = dates.min().flatMap { lo in dates.max().map { lo...$0 } }
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Power")
+                    .font(.subheadline)
+                Spacer()
+                if let selected {
+                    Text("\(selected.watts, format: .number.precision(.fractionLength(0))) W")
+                        .font(.subheadline.weight(.semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(.orange)
+                    Text(selected.date, format: selectionTimeFormat)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Chart {
+                ForEach(readings) {
+                    AreaMark(x: .value("Time", $0.date), y: .value("W", $0.watts))
+                        .interpolationMethod(.stepEnd)
+                        .foregroundStyle(.orange.opacity(0.6))
+                }
+                if let selected {
+                    RuleMark(x: .value("Selected", selected.date))
+                        .lineStyle(StrokeStyle(lineWidth: 1))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .chartXScale(domain: domain ?? Date.distantPast...Date.distantFuture)
+            .chartYScale(domain: .automatic(includesZero: true))
+            .chartXSelection(value: $scrubSelection)
+            .frame(height: 140)
+        }
+        .padding(.vertical, 4)
+    }
+
     @ViewBuilder
     private func bridgeRow(_ bridge: AirSnapshot.Bridge?) -> some View {
         if let bridge {
-            let lastSeen = Date(timeIntervalSince1970: bridge.lastSeen)
-            let online = Date().timeIntervalSince(lastSeen) < bridgeOfflineAfter
-            LabeledContent("Bridge") {
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(online ? Color.green : Color.red)
-                        .frame(width: 8, height: 8)
-                    if online {
-                        Text("Online")
-                    } else {
-                        Text("Offline since \(lastSeen, style: .relative) ago")
-                    }
-                }
-            }
+            statusRow("Bridge", lastSeen: bridge.lastSeen)
         } else {
             LabeledContent("Bridge", value: "Never connected")
+        }
+    }
+
+    private func statusRow(_ label: String, lastSeen ts: TimeInterval) -> some View {
+        let lastSeen = Date(timeIntervalSince1970: ts)
+        let online = isOnline(ts)
+        return LabeledContent(label) {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(online ? Color.green : Color.red)
+                    .frame(width: 8, height: 8)
+                if online {
+                    Text("Online")
+                } else {
+                    Text("Offline since \(lastSeen, style: .relative) ago")
+                }
+            }
         }
     }
 }
